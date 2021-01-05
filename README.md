@@ -16,6 +16,6 @@ test results| Data and graphs from prototype and sensor testing
 ## Useful Links
 Electrical Systems and Design: https://drive.google.com/drive/folders/1k33s2y43-InLWo-b1jafe-2Dh3Hp2nfA <br/>
 Testing: https://drive.google.com/drive/folders/1nVFiCWt9zkrQSGLBtsyK4ArUOEwjRom1
-
+Enumeration Tutorial for State machines: https://www.baldengineer.com/state-machine-with-enum-tutorial.html
 
 
