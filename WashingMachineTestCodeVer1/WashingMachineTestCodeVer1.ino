@@ -5,7 +5,7 @@
 #include <PID_v1.h>
 
 //////////PID///////////
-//Define variable
+//Define variable 
 double Setpoint = 0, Input = 0, Output = 0;
 //Define the PID named myPID
 PID myPID(&Input, &Output, &Setpoint, 1, 1, 0, DIRECT); //1,1,0 are the Kp, Ki, and Kd values (in that order)

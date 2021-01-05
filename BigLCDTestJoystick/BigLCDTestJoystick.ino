@@ -7,9 +7,9 @@ LiquidCrystal_I2C lcd(0x27,20,4);
 
 int cursorPos = 1;
 
-const int SW_pin = 8; // digital pin connected to switch output
-const int X_pin = A1; // analog pin connected to X output
-const int Y_pin = A5; // analog pin connected to Y output
+const int SW_pin = 22; // digital pin connected to switch output
+const int X_pin = A0; // analog pin connected to X output
+const int Y_pin = A1; // analog pin connected to Y output
 
 void setup() {
 
@@ -59,7 +59,7 @@ void loop() {
       cursorPos = 0;
     }
   } 
-  if (digitalRead(selectButton) == HIGH) {
+  if (digitalRead(SW_pin) == HIGH) {
     //print a message to the screen, the clear and replace with original message
     
     if(cursorPos == 1)

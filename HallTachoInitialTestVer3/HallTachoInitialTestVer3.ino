@@ -3,7 +3,7 @@
 int hallPin = 2;
 
 // set number of hall trips for RPM reading (higher improves accuracy)
-float hall_thresh = 100.0;
+float hall_thresh = 3.0;
 
 int speedPin = 5;
 int dirPin = 4;

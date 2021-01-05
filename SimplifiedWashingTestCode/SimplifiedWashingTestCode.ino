@@ -8,14 +8,14 @@
 LiquidCrystal_I2C lcd(0x27,20,4);
 //this uses I2C with pins 20 and 21 to control the LCD screen
 
-const int pwm = 12; //make sure this is a valid pwm pin
-const int dirControl = 40; //This value will need to change. This is a digital input used to control the motor direction
+const int pwm = 5; //make sure this is a valid pwm pin
+const int dirControl = 4; //This value will need to change. This is a digital input used to control the motor direction
 //Motor controller should be set to signed magnitude mode
 
 ////////Joystick////////
 const int joystickX = A0; //pin value may change
 const int joystickY = A1; //pin value may change
-const int joystickButton = 22; //pin value may change
+const int joystickButton = 11; //pin value may change
 
 /////////Lid Hall Effect////////
 const int lidPin = 30; // pin value may change
@@ -27,7 +27,7 @@ const int hallPin = 50;
 const int RELAY_valveENABLE = 2;  // need to change this number upon our design
 int valve_status;
 
-const int RELAY_pumpENABLE = 12;  // need to change this number upon our design
+const int RELAY_pumpENABLE = 13;  // need to change this number upon our design
 int pump_status;
 
 //Ultrasonic Sensor HC-SR04
@@ -43,6 +43,7 @@ const int largeTime=15;
 
 
 void setup() {
+  Serial.begin(9600);
   // put your setup code here, to run once:
   //set up the LCD screen
   lcd.init();
@@ -57,6 +58,8 @@ void setup() {
   //Set up the relay pins
   pinMode(RELAY_valveENABLE, OUTPUT); //Need to add pins for water level sensor
   pinMode(RELAY_pumpENABLE,OUTPUT);
+  digitalWrite(RELAY_valveENABLE, HIGH); //Need to add pins for water level sensor
+  digitalWrite(RELAY_pumpENABLE,LOW);
 
   //Set up ultrasonic sensor pins
   pinMode(trigPin,OUTPUT);
@@ -100,6 +103,7 @@ void loop() {
     case 0:
       displaySelection(); //print the opening screen that lists all of the selection options
       programState=1;
+      Serial.println("End of state 0");
       break;
     case 1:
       xPos=analogRead(joystickX); //not sure if this is actually used...
@@ -110,20 +114,24 @@ void loop() {
           lcd.clear();
           lcd.setCursor(0,0);
           lcd.print("Short Time Selected");
+          delay(1000);
         }
         else if(cursorLoc==2){
           progTime=medTime; //if second line is selected, the program will use the medium time
           lcd.clear();
           lcd.setCursor(0,0);
           lcd.print("Medium Time Selected");
+          delay(1000);
         }
         else if(cursorLoc==3){
           progTime=largeTime; //if third line is selected, the program will use the long time
           lcd.clear();
           lcd.setCursor(0,0);
           lcd.print("Long Time Selected");
+          delay(1000);
         }
         programState = 2;
+        Serial.println("End of state 1");
         lcd.noCursor(); //hide cursor after selection is made
       }
       else{
@@ -148,6 +156,7 @@ void loop() {
       //check that the door is closed
       if(!checkLid()){
         programState=3; //if checkLid is false, then the program will continue
+        Serial.println("End of state 2");
       }
       else{
         lcd.clear();
@@ -158,9 +167,10 @@ void loop() {
       }
       break;
     //Open inlet valve
-    /*case 3:
+    case 3:
       openValve(); //This function should open the solenoid valve
       programState=4;
+      Serial.println("End of state 3");
       break;
     //Check water level and close inlet valve
     case 4:
@@ -176,6 +186,7 @@ void loop() {
         if(CheckValve())
         {
          programState=5;
+         Serial.println("End of state 4");
         }
       }
       break;
@@ -190,48 +201,89 @@ void loop() {
       }
       else
       {
-        if(finalTime == 0)
-        {
-          startTime = millis();
-          finalTime = ((progTime*60UL)*1000) + startTime;
-        }
-        displayTime(finalTime); //display the time remaining for this cycle, this function may need tweeking to be displayed properly
-        Setpoint = 60; //want our speed to be 60 rpm
-        Input = getSpeed();
-        myPID.Compute();
-        analogWrite(pwm,Output);
-        if(counter == 0)
-        {
-          counter = millis();
-        }
-        if(counter-millis() > 10000)
-        {
-          analogWrite(pwm,0); //need to check if stopping it like this is reasonable and safe
-          Output = 0; //this may be unnecessary
-          if(digitalRead(dirControl) == LOW)
-            digitalWrite(dirControl,HIGH); //change the motor direction
-          else if(digitalRead(dirControl) == HIGH)
-            digitalWrite(dirControl,LOW); //change the motor direction
-
-          counter = 0;
-        }
-        if(millis() > finalTime)
-        {
-          programState = 6; //If the required time has passed, move to the next state to stop the motor
-          finalTime = 0; //Reset timer
-        }
+        analogWrite(pwm,60);
+        delay(2000);
+        analogWrite(pwm,0);
+        programState=6;
+        Serial.println("End of state 5");
       }
       break;
     //Stop motor
     case 6:
       lcd.clear();
       analogWrite(pwm,0); //turn off the motor
-      Output = 0;
       programState = 7;
+      Serial.println("End of state 6");
+      break;
+    //Start drain pump
+    case 7:
+      turnONpump();
+      programState=8;
+      Serial.println("End of state 7");
+      break;
+    //Check water level
+    //Stop drain pump
+    case 8:
+      if(digitalRead(joystickButton)==HIGH || checkLid())//if the button is pressed, the program should change to the pause state
+      {
+        while(digitalRead(joystickButton)==HIGH){}//wait until the button is released
+        programState=12; //go to the pause state
+        returnState=8; //once the pause is finished, return to the previous state to open the valve again
+      }
+      else
+      {
+        turnOFFpump();
+        if(CheckPump())
+        {
+          if(hasRinsed)
+          {
+           programState=9;
+           Serial.println("End of state 8 for second time");
+          }
+          else
+          {
+            programState=3;
+            Serial.println("End of state 8 for first time");
+            hasRinsed=true;
+          }
+        }
+      }
+      break;
+    //Run motor at high speed
+    case 9:
+      if(digitalRead(joystickButton)==HIGH || checkLid())//if the button is pressed, the program should change to the pause state
+      {
+        while(digitalRead(joystickButton)==HIGH){}//wait until the button is released
+        programState=12; //go to the pause state
+        returnState=9; //once the pause is finished, return to this state
+      }
+      else
+      {
+        analogWrite(pwm,110);
+        delay(2000);
+        analogWrite(pwm,0);
+        programState=10;
+        Serial.println("End of state 9");
+      }
+      break;
+    //Stop motor
+    case 10:
+      lcd.clear();
+      analogWrite(pwm,0); //turn off the motor, check if this is safe
+      
+      programState=11;
+      Serial.println("End of state 10");
+      break;
+    //Display end message, then reset
+    case 11:
+      lcd.clear();
+      lcd.print("Cycle complete");
+      while(digitalRead(joystickButton==LOW)){}
+      programState=0;
+      Serial.println("End of state 11");
       break;
     //Pause state - all devices should be turned off and a message should be displayed
     //pressing the pause button again should resume to the previous state
-    */
     case 12:
       analogWrite(pwm,0); //turn off the motor, this value may need to change
       closeValve();
@@ -300,6 +352,7 @@ bool checkLid(){
 void openValve(){
   digitalWrite(RELAY_valveENABLE,HIGH); //open the valve for water inlet
   //we need to test the Relay ON or OFF for opening the valve, in some cases, the relay works reversly: LOW is on, HIGH is Off.
+  Serial.println("opening  Valve");
 }
 
 void closeValve(){  
@@ -354,6 +407,7 @@ bool CheckValve(){
 
 //These functions may need to change slightly
 void turnONpump() {
+  Serial.println("ON");
   digitalWrite(RELAY_pumpENABLE,HIGH); //turn on the pump for water drain
   //we need to test the Relay ON or OFF for opening the valve, in some cases, the relay works reversly: LOW is on, HIGH is Off.
 

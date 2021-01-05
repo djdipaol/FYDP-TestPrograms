@@ -3,12 +3,12 @@
 int hallPin = 2;
 
 // set number of hall trips for RPM reading (higher improves accuracy)
-float hall_thresh = 100.0;
+float hall_thresh = 3.0;
 
 int speedPin = 5;
 int dirPin = 4;
 
-int value = 60;
+int value = 100;
 
 bool stopped=true;
 
@@ -25,11 +25,18 @@ void setup() {
   Serial.begin(9600); // opens serial port, sets data rate to 9600 bps
   //Serial.setTimeout(10); // change default (1000ms) to have faster response time
   Serial.println("Running hall effect tachometer test code:");
+  delay(5000);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  if(!stopped)
+  analogWrite(speedPin,value);
+  Serial.println("Running");
+  delay(5000);
+  analogWrite(speedPin,0);
+  Serial.println("Stopped");
+  delay(5000);
+  /*if(!stopped)
   {
     analogWrite(speedPin, 0);
     stopped=true;
@@ -84,7 +91,7 @@ void loop() {
       default:
         break;
     }
-  }
+  }*/
   
   
 }
