@@ -57,7 +57,7 @@ void loop() {
 //Used to get the motor speed. Based on code from MakerPortal
 //https://tinyurl.com/y6sfnlmt
 double getSpeed()
-{//
+{
   //lets try something else
   double start = micros();
   double hall_count = 0.0;
@@ -72,7 +72,7 @@ double getSpeed()
     else {
       on_state=false;
     }
-    if(hall_count > 20.0 || micros()-start >500000){break;}
+    if(hall_count > 20.0 || micros()-start >50000){break;}
   }
   //get information about Time and RPM
   double end_time = micros();
