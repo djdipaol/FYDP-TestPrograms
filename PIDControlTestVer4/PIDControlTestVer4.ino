@@ -74,7 +74,7 @@ void loop() {
 //Used to get the motor speed. Based on code from MakerPortal
 //https://tinyurl.com/y6sfnlmt
 double getSpeed()
-{
+{//
   //lets try something else
   double start = micros();
   double hall_count = 0.0;
