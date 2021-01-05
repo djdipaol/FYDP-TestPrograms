@@ -1,43 +1,26 @@
-//This is the preliminary coding design of the entire program.
-//Specific sections of it will be tested individually before combining all functions
-
-//////////PID///////////
+// PID
 #include <PID_v1.h>
-
-//Define variable
 double Setpoint = 800, Input = 45, Output = 0;
-//Define the PID named myPID
 int Kp = 1.0; //These values can change based on testing
 int Ki = 0;
 int Kd = 0;
+
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 const int pwm = 12; //PWM pins are pins 2-13
 const int dirControl = 22; //This is a digital input used to control the motor direction
-//Motor controller should be set to signed magnitude mode
-
 double currSpeed = 0;
-
 unsigned long counter = 0; //used to track time for reversing the motor direction
-
 float hall_thresh = 100.0; //used to track threshold for the tachometer
-
-////////Tachometer Hall Effect////////
 const int hallPin = 45;
 
 void setup() {
-  // put your setup code here, to run once:
+  Serial.begin (9600);
   pinMode(hallPin, INPUT);
-
-  //Set up motor control pins
   pinMode(pwm, OUTPUT);
   pinMode(dirControl, OUTPUT);
   digitalWrite(dirControl, LOW);
   analogWrite(pwm, Input);
-
-  Serial.begin (9600);
-
   myPID.SetMode(AUTOMATIC);
-
   Setpoint=800; //set to a fairly low speed
 }
 
@@ -86,13 +69,10 @@ double getSpeed()
         hall_count+=1.0;
       }
     }
-    else{
+    else {
       on_state=false;
     }
-
-    if(micros()-start>5000000.0){ //check if stopped, may need to reduce time
-      break;
-    }
+    if(hall_count > 20.0 || micros()-start >500000){break;}
   }
   //get information about Time and RPM
   double end_time = micros();
