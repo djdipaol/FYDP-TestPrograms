@@ -59,8 +59,8 @@ void setup() {
   pinMode(RELAY_valveENABLE, OUTPUT); //Need to add pins for water level sensor
   pinMode(RELAY_pumpENABLE,OUTPUT);
   digitalWrite(RELAY_valveENABLE, HIGH); //Need to add pins for water level sensor
-  digitalWrite(RELAY_pumpENABLE,LOW);
-
+  digitalWrite(RELAY_pumpENABLE,HIGH);
+ww
   //Set up ultrasonic sensor pins
   pinMode(trigPin,OUTPUT);
   pinMode(echoPin,INPUT);

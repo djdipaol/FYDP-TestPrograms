@@ -7,7 +7,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);
 
 int cursorPos = 1;
 
-const int SW_pin = 22; // digital pin connected to switch output
+const int SW_pin = 8; // digital pin connected to switch output
 const int X_pin = A0; // analog pin connected to X output
 const int Y_pin = A1; // analog pin connected to Y output
 
@@ -43,23 +43,23 @@ void loop() {
   //buttonState = digitalRead(buttonPin);
 
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-  if (analogRead(Y_pin)==1023) {
+  if (analogRead(Y_pin)==0) {
     //decrease the value of the cursor position, if less than 0, set to 3
     cursorPos = cursorPos-1;
-    if(cursorPos < 0)
+    if(cursorPos < 1)
     {
       cursorPos = 3;
     }
   } 
-  if (analogRead(Y_pin)==0) {
+  if (analogRead(Y_pin)==1023) {
     //increase the value of the cursor position, if less than 0, set to 3
     cursorPos = cursorPos+1;
     if(cursorPos > 3)
     {
-      cursorPos = 0;
+      cursorPos = 1;
     }
   } 
-  if (digitalRead(SW_pin) == HIGH) {
+  if (digitalRead(SW_pin) == LOW) {
     //print a message to the screen, the clear and replace with original message
     
     if(cursorPos == 1)
