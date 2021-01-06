@@ -2,6 +2,13 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27,PIN_WIRE_SDA,PIN_WIRE_SCL);
+int currentCursorLine = 1; //used to track what line of the LCD screen the cursor is on
+
+// Cycle States
+enum Cycle {
+  UNDEF, 
+  DISPLAY_SELECTION, 
+  };
 
 // Motor
 const int PWM  = 5; //make sure this is a vaLID PWM  pin
@@ -25,8 +32,8 @@ const int VALVE_IN_ENABLE = 2;
 const int PUMP_OUT_ENABLE = 13;  
 
 // Ultrasonic: Water Level, HC-SR04
-const int trigPin = 9;
-const int echoPin = 10;
+const int ULTRASONIC_TRIGGER_PIN = 9;
+const int ULTRASONIC_ECHO_PIN = 10;
 long duration;
 int distance;
 
@@ -37,7 +44,7 @@ const int largeTime=15;
 
 //
 int programState = 0; //used to track what state the program is in
-int cursorLoc = 1; //used to track what line of the LCD screen the cursor is on
+
 
 int xPos = -1; //x position of the joystick
 int yPos = -1; //y position of the joystick
