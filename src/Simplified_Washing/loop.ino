@@ -37,7 +37,7 @@ void loop() {
         xPos = analogRead(JOYSTICK_X);
         yPos = analogRead(JOYSTICK_Y);
         delay(1000);
-        if (digitalRead(JOYSTICK_PRESS) == HIGH) {
+        if (digitalRead(JOYSTICK_PRESS) == LOW) {
           if (currentCursorLine == 1) {
             cycleRunTime = SMALL_CYCLE_TIME;
             printString2(0, 0, "Short Time Selected");
@@ -147,7 +147,7 @@ void loop() {
       }
     case 11: { //Display end message, then reset
         printString2(0, 0, "Cycle Complete");
-        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        while (digitalRead(JOYSTICK_PRESS == HIGH)) {}
         programState = 0;
         Serial.println("End of state 11");
         break;
