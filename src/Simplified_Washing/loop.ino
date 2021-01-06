@@ -6,19 +6,19 @@ void setup() {
   lcd.backlight();
 
   // Joystick
-  pinMode(JOYSTICK_X,INPUT);
-  pinMode(JOYSTICK_Y,INPUT);
-  pinMode(JOYSTICK_PRESS,INPUT);
+  pinMode(JOYSTICK_X, INPUT);
+  pinMode(JOYSTICK_Y, INPUT);
+  pinMode(JOYSTICK_PRESS, INPUT);
 
   // Solenoid Valve and Pump Relay
-  pinMode(VALVE_IN_ENABLE, OUTPUT); 
-  pinMode(PUMP_OUT_ENABLE,OUTPUT);
-  digitalWrite(VALVE_IN_ENABLE, HIGH); 
-  digitalWrite(PUMP_OUT_ENABLE,LOW);
+  pinMode(VALVE_IN_ENABLE, OUTPUT);
+  pinMode(PUMP_OUT_ENABLE, OUTPUT);
+  digitalWrite(VALVE_IN_ENABLE, HIGH);
+  digitalWrite(PUMP_OUT_ENABLE, LOW);
 
   // Ultrasonic: Water Level
-  pinMode(ULTRASONIC_TRIGGER_PIN,OUTPUT);
-  pinMode(ULTRASONIC_ECHO_PIN,INPUT);
+  pinMode(ULTRASONIC_TRIGGER_PIN, OUTPUT);
+  pinMode(ULTRASONIC_ECHO_PIN, INPUT);
 
   // Motor
   pinMode(PWM, OUTPUT);
@@ -27,201 +27,150 @@ void setup() {
 }
 
 void loop() {
-  switch(programState) {
+  switch (programState) {
     case 0: { // Start screen
-      lcd.clear();
-      displayString(0,0,"Choose a program:");
-      displayString(0,1,"Small load");
-      displayString(0,2,"Medium load");
-      displayString(0,3,"Large Load");
-      lcd.cursor();
-      lcd.setCursor(12,1);
-      programState = 1;
-      Serial.println("End of state 0");
-      break;
-    }
+        initializeScreen();
+        startNextCycle();
+        break;
+      }
     case 1: { // User Selection
-      xPos = analogRead(JOYSTICK_X); //not sure if this is actually used...
-      yPos = analogRead(JOYSTICK_Y);
-      delay(1000);
-      if (digitalRead(JOYSTICK_PRESS) == HIGH){
-        lcd.clear();
-        if (currentCursorLine == 1) {
-          cycleRunTime = SMALL_CYCLE_TIME; //if first line is selected, the program will use the short time
-          displayString(0,0,"Short Time Selected");
-        }
-        else if (currentCursorLine == 2){
-          cycleRunTime = MEDIUM_TIME; //if second line is selected, the program will use the medium time
-          displayString(0,0,"Medium Time Selected");
-        }
-        else if (currentCursorLine == 3){
-          cycleRunTime=LARGE_CYCLE_TIME; //if third line is selected, the program will use the long time
-          displayString(0,0,"Long Time Selected");
-        }
-        programState = 2;
-        Serial.println("End of state 1");
-        lcd.noCursor(); //hide cursor after selection is made
-      }
-      else{
-        if (yPos  ==  1023){
-          currentCursorLine+=1; //may need to switch + to -, this moves the cursor up
-          if (currentCursorLine>3){
-            currentCursorLine=1; //check overflow
-          }
-        }
-        else if (yPos  ==  0){
-          currentCursorLine-=1; //this moves the cursor down
-          if (currentCursorLine<1){
-            currentCursorLine=3; //check overflow
-          }
-        }
-        lcd.setCursor(12,currentCursorLine); //may need to change 12 to another number, display cursor at the end of the lines
-        lcd.cursor(); //this displays the cursor on the screen
-      }
-      break;
-    }
-    case 2: { // Check door is closed
-      if (!checkLid()){
-        programState=3; //if checkLid is false, then the program will continue
-        Serial.println("End of state 2");
-      }
-      else{
-        lcd.clear();
-        displayString(0,0,"LID is not closed");
+        xPos = analogRead(JOYSTICK_X);
+        yPos = analogRead(JOYSTICK_Y);
         delay(1000);
-        programState=0; //if checkLid is true, then the program will go back to the selection state
-      }
-      break;
-    }
-    case 3: { // Open inlet valve
-      openValve(); //This function should open the solenoid valve
-      programState=4;
-      Serial.println("End of state 3");
-      break;
-    }
-    case 4: { // Check water level and close inlet valve
-      if (digitalRead(JOYSTICK_PRESS) == HIGH || checkLid()) {//if the button is pressed, the program should change to the pause state
-        while(digitalRead(JOYSTICK_PRESS) == HIGH){} //wait until the button is released
-        programState=12; //go to the pause state
-        lastSavedState=3; //once the pause is finished, return to the previous state to open the valve again
-      }
-      else {
-        closeValve();
-        if (checkValve()) {
-         programState=5;
-         Serial.println("End of state 4");
+        if (digitalRead(JOYSTICK_PRESS) == HIGH) {
+          if (currentCursorLine == 1) {
+            cycleRunTime = SMALL_CYCLE_TIME;
+            printString2(0, 0, "Short Time Selected");
+          }
+          else if (currentCursorLine == 2) {
+            cycleRunTime = MEDIUM_TIME;
+            printString2(0, 0, "Medium Time Selected");
+          }
+          else if (currentCursorLine == 3) {
+            cycleRunTime = LARGE_CYCLE_TIME;
+            printString2(0, 0, "Long Time Selected");
+          }
+          startNextCycle();
+          lcd.noCursor();
         }
+        else {
+          if (yPos  ==  1023) {
+            currentCursorLine += 1;
+            if (currentCursorLine > 3) {
+              currentCursorLine = 1; //check overflow
+            }
+          }
+          else if (yPos  ==  0) {
+            currentCursorLine -= 1; //this moves the cursor down
+            if (currentCursorLine < 1) {
+              currentCursorLine = 3; //check overflow
+            }
+          }
+          lcd.setCursor(12, currentCursorLine);
+          lcd.cursor();
+        }
+        break;
       }
-      break;
-    }
+    case 2: { // Check door is closed
+        if (!checkLid()) {
+          startNextCycle();
+        }
+        else {
+          printString2(0, 0, "Lid is not closed");
+          delay(1000);
+          programState = 0;
+        }
+        break;
+      }
+    case 3: { // Open inlet valve
+        openValve();
+        startNextCycle();
+        break;
+      }
+    case 4: { // Check water level and close inlet valve
+        checkForPause(3);
+        closeWater();
+        if (checkValve()) {
+          startNextCycle();
+        }
+        break;
+      }
     case 5: { // Run the motor for the washing cycle and display time
-      if (digitalRead(JOYSTICK_PRESS) == HIGH || checkLid())//if the button is pressed, the program should change to the pause state
-      {
-        while(digitalRead(JOYSTICK_PRESS) == HIGH){}//wait until the button is released
-        programState=12; //go to the pause state
-        lastSavedState=5; //once the pause is finished, return to this state
-        remainingTimerTime=endTimerTime-millis();
-      }
-      else
-      {
-        analogWrite(PWM ,60);
+        remainingTimerTime = endTimerTime - millis();
+        checkForPause();
+        setMotorSpeed(60);
         delay(2000);
-        analogWrite(PWM ,0);
-        programState=6;
-        Serial.println("End of state 5");
+        setMotorSpeed(0);
+        startNextCycle();
+        break;
       }
-      break;
-    }
     case 6: { //Stop motor
-      lcd.clear();
-      analogWrite(PWM ,0); //turn off the motor
-      programState = 7;
-      Serial.println("End of state 6");
-      break;
-    }
-    case 7: { //Start drain pump
-      turnOnPump();
-      programState=8;
-      Serial.println("End of state 7");
-      break;
-    }
-    case 8: { //Check water level missing, Stop drain pump
-      if (digitalRead(JOYSTICK_PRESS) == HIGH || checkLid())//if the button is pressed, the program should change to the pause state
-      {
-        while(digitalRead(JOYSTICK_PRESS) == HIGH){}//wait until the button is released
-        programState=12; //go to the pause state
-        lastSavedState=8; //once the pause is finished, return to the previous state to open the valve again
+        lcd.clear();
+        setMotorSpeed(0);
+        startNextCycle();
+        break;
       }
-      else {
+    case 7: { //Start drain pump
+        turnOnPump();
+        startNextCycle();
+        break;
+      }
+    case 8: { //Check water level missing, Stop drain pump
+        checkForPause();
         turnOffPump();
         if (checkPump) {
           if (isRinsed) {
-           programState=9;
-           Serial.println("End of state 8 for second time");
+            startNextCycle();
           }
           else {
-            programState=3;
+            programState = 3;
             Serial.println("End of state 8 for first time");
-            isRinsed=true;
+            isRinsed = true;
           }
         }
+        break;
       }
-      break;
-    }
     case 9: { // Run motor at high speed
-      if (digitalRead(JOYSTICK_PRESS) == HIGH || checkLid()) {//if the button is pressed, the program should change to the pause state
-        while(digitalRead(JOYSTICK_PRESS) == HIGH){}//wait until the button is released
-        programState=12; //go to the pause state
-        lastSavedState=9; //once the pause is finished, return to this state
-      }
-      else {
-        analogWrite(PWM ,110);
+        checkForPause();
+        setMotorSpeed(110);
         delay(2000);
-        analogWrite(PWM ,0);
-        programState=10;
-        Serial.println("End of state 9");
+        setMotorSpeed(0);
+        startNextCycle();
+
+        break;
       }
-      break;
-    }
     case 10: { //Stop motor
-      lcd.clear();
-      analogWrite(PWM ,0); //turn off the motor, check if this is safe
-      programState=11;
-      Serial.println("End of state 10");
-      break;
-    }
-    case 11: { //Display end message, then reset
-      lcd.clear();
-      lcd.print("Cycle complete");
-      while(digitalRead(JOYSTICK_PRESS == LOW)){}
-      programState=0;
-      Serial.println("End of state 11");
-      break;
-    }
-    case 12: { // Pause
-      analogWrite(PWM ,0); //turn off the motor, this value may need to change
-      closeValve();
-      turnOffPump();
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("Paused");
-      while(digitalRead(JOYSTICK_PRESS) == HIGH){} //this may not be necessary, right now it is in case the button is left pressed down when pausing
-      while(digitalRead(JOYSTICK_PRESS == LOW)){}
-      if (remainingTimerTime!=0)
-      {
-        endTimerTime = ((remainingTimerTime*60UL)*1000) + millis(); //update final time to account for the pause that has occurred
-        remainingTimerTime = 0; //reset the remainingTimerTime variable
+        lcd.clear();
+        setMotorSpeed(0);
+        startNextCycle();
+        break;
       }
-      programState=lastSavedState;
-      break;
-    //default state used as an error state
-    default:
-      lcd.setCursor(0,0);
-      lcd.print("Error please restart");
-      delay(1000);
-      programState=0;
-      //Add all stopping functions
-      break;
-    }
+    case 11: { //Display end message, then reset
+        printString2(0, 0, "Cycle Complete");
+        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        programState = 0;
+        Serial.println("End of state 11");
+        break;
+      }
+    case 12: { // Pause
+        setMotorSpeed(0);
+        closeWater();
+        turnOffPump();
+        printString2(0, 0, "Paused");
+        while (digitalRead(JOYSTICK_PRESS) == HIGH) {}
+        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        if (remainingTimerTime != 0) {
+          endTimerTime = ((remainingTimerTime * 60UL) * 1000) + millis(); //update final time to account for the pause that has occurred
+          remainingTimerTime = 0; //reset the remainingTimerTime variable
+        }
+        programState = lastSavedState;
+        break;
+      default: { //default state used as an error state
+          printString2(0, 0, "Error code 100");
+          delay(1000);
+          programState = 0;
+          break;
+        }
+      }
   }
 }
