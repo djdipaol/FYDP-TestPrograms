@@ -26,15 +26,19 @@ void setup() {
 }
 
 void loop() {
+  // Check if user has changed  Kp, Ki, Kd
+  checkInput();
+  
   // Calculate time from start
   timeElapsed = timeElapsed + micros() - previousTimestamp;
   previousTimestamp = micros();
   
   // Set speed target based on random sinusoidal function
   speedTarget = 50 * sin(timeElapsed / 1000000);
+  //speedTarget = log(timeElapsed / 1000000);
 
   // Simulate sensor as delayed PWM and random forcing
-  speedActual = pwmOutput * 0.9 + random(0, 2) - random(0, 2);
+  speedActual = pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 80;
 
   if (myPID.Compute()) {
     Serial.print("Input:" + (String)speedTarget + ",");
