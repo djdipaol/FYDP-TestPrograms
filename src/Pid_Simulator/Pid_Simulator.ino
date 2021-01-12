@@ -26,6 +26,34 @@ void setup() {
 }
 
 void loop() {
+  // Calculate time from start
+  timeElapsed = timeElapsed + micros() - previousTimestamp;
+  previousTimestamp = micros();
+  
+  // Set speed target based on random sinusoidal function
+  speedTarget = 50 * sin(timeElapsed / 1000000);
+
+  // Simulate sensor as delayed PWM and random forcing
+  speedActual = pwmOutput * 0.9 + random(0, 2) - random(0, 2);
+
+  if (myPID.Compute()) {
+    Serial.print("Input:" + (String)speedTarget + ",");
+    Serial.print("Actual:" + (String)speedActual + ",");
+    Serial.print("PWM:" + (String)pwmOutput + ",");
+    Serial.print("kP="+(String)kp+":0,");
+    Serial.print("ki="+(String)ki+":0,");
+    Serial.println("kd="+(String)kd+":0");
+  }
+}
+
+/**
+ * Checks serial input stream for user input.  Will set kp, ki, kd according to user.
+ * Use Cases:
+ * Example 1: "p 10" means user sets kp to 10
+ * Example 2: "i 10" means user sets ki to 10
+ * Example 3: "d 5" means user sets kd to 5
+ */
+void checkInput() {
   if (Serial.available() > 0) {
     Serial.println("hiddi");
     String command = Serial.readString();
@@ -44,40 +72,5 @@ void loop() {
       kd = textD.toDouble();
     }
     myPID.SetTunings(kp,ki,kd);
-  }
-  
-  timeElapsed = timeElapsed + micros() - previousTimestamp;
-  previousTimestamp = micros();
-  speedTarget = 50 * sin(timeElapsed / 1000000);
-
-  int polarity = 1;
-  if (random(0, 1) == 1) {
-    polarity = -1;
-  }
-  speedActual = pwmOutput * 0.9 + random(0, 2) - random(0, 2);
-
-  if (myPID.Compute()) {
-    Serial.print("Input:");
-    Serial.print(speedTarget);
-    Serial.print(",");
-    
-    Serial.print("Actual:");
-    Serial.print(speedActual);
-    Serial.print(",");
-    
-    Serial.print("PWM:");
-    Serial.print(pwmOutput);
-    Serial.print(",");
-    
-    Serial.print("kP"+(String)kp+":");
-    Serial.print(0);
-    Serial.print(",");
-
-    Serial.print("ki"+(String)ki+":");
-    Serial.print(0);
-    Serial.print(",");
-
-    Serial.print("kd"+(String)kd+":");
-    Serial.println(0);
   }
 }
