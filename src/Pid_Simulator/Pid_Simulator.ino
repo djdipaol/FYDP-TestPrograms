@@ -55,11 +55,9 @@ void loop() {
  */
 void checkInput() {
   if (Serial.available() > 0) {
-    Serial.println("hiddi");
     String command = Serial.readString();
     command.replace(" ", "");
     if (command.indexOf("p") >= 0) {
-      Serial.println("hii");
       String textP = command.substring(command.indexOf("p") + 1, command.length());
       kp = textP.toDouble();
     }
