@@ -1,0 +1,4 @@
+Ultrasonic sensor reads ~ 24-25cm (or 21-22cm) when no water, sometimes it reads about 13 cm, may be seeing flat surface of barrel
+-Need to make sure that when assembled the ultrasonic sensor is not too close to the flat shoulder of the barrel
+-Should just check that ambient measurements are okay, may want to do some window averaging when reading levels
+
