@@ -4,7 +4,7 @@
 byte incomingByte;
 double kp = 0.1;
 double ki = 5;
-double kd = 0.00005;
+double kd = 0.000005;
 
 // Speed
 double speedTarget;
@@ -38,7 +38,7 @@ void loop() {
   //speedTarget = log(timeElapsed / 1000000);
 
   // Simulate sensor as delayed PWM and random forcing
-  speedActual = pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 80;
+  speedActual = pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 0;
 
   if (myPID.Compute()) {
     Serial.print("Input:" + (String)speedTarget + ",");
