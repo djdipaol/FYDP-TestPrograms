@@ -51,3 +51,4 @@ int lastSavedState = 0; //this is used to determine where to return to after the
 unsigned long startTimerTime = 0;
 unsigned long endTimerTime = 0;
 unsigned long remainingTimerTime = 0;
+int failureCode = 0; //int used for identifying different failure states

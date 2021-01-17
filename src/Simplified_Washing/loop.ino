@@ -83,11 +83,13 @@ void loop() {
         break;
       }
     case 3: { // Open inlet valve
+         //Failure code 1 notes: if water level does not change, set error code
         openValve();
         startNextCycle();
         break;
       }
     case 4: { // Check water level and close inlet valve
+        //Failure code 2 notes: if water level does not stop, set error code
         checkForPause(3);
         closeWater();
         if (checkValve()) {
@@ -96,6 +98,7 @@ void loop() {
         break;
       }
     case 5: { // Run the motor for the washing cycle and display time
+        //Failure code 3 notes: if the motor speed does not change, set error code
         remainingTimerTime = endTimerTime - millis();
         checkForPause();
         setMotorSpeed(60);
@@ -105,12 +108,14 @@ void loop() {
         break;
       }
     case 6: { //Stop motor
+        //Failure code 4 notes: if the motor speed does not fall to zero, set error code
         lcd.clear();
         setMotorSpeed(0);
         startNextCycle();
         break;
       }
     case 7: { //Start drain pump
+        //Failure code 5 notes: if the water level does not lower, set error code
         turnOnPump();
         startNextCycle();
         break;
@@ -131,6 +136,7 @@ void loop() {
         break;
       }
     case 9: { // Run motor at high speed
+        //Failure code 3 notes: if the motor speed does not change, set error code
         checkForPause();
         setMotorSpeed(110);
         delay(2000);
@@ -140,6 +146,7 @@ void loop() {
         break;
       }
     case 10: { //Stop motor
+        //Failure code 4 notes: if the motor speed does not fall to zero, set error code
         lcd.clear();
         setMotorSpeed(0);
         startNextCycle();
@@ -165,6 +172,38 @@ void loop() {
         }
         programState = lastSavedState;
         break;
+     case 13: {
+        //Failure Code State, start by turning high power device off
+        setMotorSpeed(0);
+        closeWater();
+        turnOffPump();
+        //using an if statement for now, can possible make a switch statement
+        if(failureCode==0)
+        {
+          printString2(0,0,"Undefined Failure");
+        }
+        else if(failureCode==1)
+        {
+          printString2(0,0,"Water valve entry failure");
+        }
+        else if(failureCode==2)
+        {
+          printString2(0,0,"Water valve exit failure");
+        }
+        else if(failureCode==3)
+        {
+          printString2(0,0,"Motor start failure");
+        }
+        else if(failureCode==4)
+        {
+          printString2(0,0,"Motor stop failure");
+        }
+        else if(failureCode==5)
+        {
+          printString2(0,0,"Pump start failure");
+        }
+        break;
+     }
       default: { //default state used as an error state
           printString2(0, 0, "Error code 100");
           delay(1000);
