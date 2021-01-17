@@ -6,6 +6,21 @@
 void setMotorSpeed(int motorSpeed) {
   analogWrite(PWM , motorSpeed);
 }
+/**
+  Change the motor direction from low to high or vice versa
+  @params
+  @returns
+*/
+void changeDirection() {
+  if(digitalRead(directionControl) == LOW)
+  {
+    digitalWrite(directionControl, HIGH);
+  }
+  else
+  {
+    digitalWrite(directionControl, LOW);
+  }
+}
 
 /**
    Initialize LCD screen for user selection
@@ -131,6 +146,10 @@ void openValve() {
    @returns
 */
 void closeWater() {
+  if(caseStartTime == 0)
+  {
+    caseStartTime = millis();
+  }
   digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(ULTRASONIC_TRIGGER_PIN, HIGH);
@@ -143,20 +162,33 @@ void closeWater() {
     Serial.println("Out of range");
   }
   else {
+    //Preliminary failure code 
+    ////////////////////////////////////////////////////////////
+    if(initialDist == -1)
+    {
+      initialDist = distance;
+    }
+    if(millis()-caseStartTime>60000 && fabs(distance-initialDist)<0.5)
+    {
+      failureCode=1;
+      digitalWrite(VALVE_IN_ENABLE, LOW); //Close the valve to stop water inlet
+      valveStatus = digitalRead(VALVE_IN_ENABLE);
+    }
+    /////////////////////////////////////////////////////////////
     if (currentCursorLine  ==  LARGE_CYCLE) { //if large load program selected, run following
-      if (distance  ==  13.2) {
+      if (distance  <  13.2) {
         digitalWrite(VALVE_IN_ENABLE, LOW); //Close the valve to stop water inlet
         valveStatus = digitalRead(VALVE_IN_ENABLE);
       }
     }
     else if (currentCursorLine  ==  MEDIUM_CYCLE) {//if medium load program selected, run following
-      if (distance  ==  17.2) {
+      if (distance  <  17.2) {
         digitalWrite(VALVE_IN_ENABLE, LOW); //Close the valve to stop water inlet
         valveStatus = digitalRead(VALVE_IN_ENABLE);
       }
     }
     else if (currentCursorLine  ==  SMALL_CYCLE) {//if small load program selected, run following
-      if (distance  ==  21) {
+      if (distance  <  21) {
         digitalWrite(VALVE_IN_ENABLE, LOW); //Close the valve to stop water inlet
         valveStatus = digitalRead(VALVE_IN_ENABLE);
       }

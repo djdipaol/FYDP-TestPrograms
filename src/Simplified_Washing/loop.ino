@@ -83,16 +83,20 @@ void loop() {
         break;
       }
     case 3: { // Open inlet valve
-         //Failure code 1 notes: if water level does not change, set error code
         openValve();
         startNextCycle();
         break;
       }
     case 4: { // Check water level and close inlet valve
+        //Failure code 1 notes: if water level does not change, set error code
         //Failure code 2 notes: if water level does not stop, set error code
         checkForPause(3);
         closeWater();
-        if (checkValve()) {
+        if(failureCode != 0)
+        {
+          programState = 13;
+        }
+        else if (checkValve()) {
           startNextCycle();
         }
         break;

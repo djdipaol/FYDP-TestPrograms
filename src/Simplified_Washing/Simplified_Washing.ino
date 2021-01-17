@@ -34,8 +34,8 @@ int pumpStatus;
 // Ultrasonic: Water Level, HC-SR04
 const int ULTRASONIC_TRIGGER_PIN = 9;
 const int ULTRASONIC_ECHO_PIN = 10;
-long duration;
-int distance;
+float duration;
+float distance;
 bool isRinsed = false;
 
 // Cycle States & Timing
@@ -51,4 +51,7 @@ int lastSavedState = 0; //this is used to determine where to return to after the
 unsigned long startTimerTime = 0;
 unsigned long endTimerTime = 0;
 unsigned long remainingTimerTime = 0;
+
 int failureCode = 0; //int used for identifying different failure states
+float initialDist = -1; //used for checking water level for failure codes
+unsigned long caseStartTime = 0; //used to track when each case starts, used for failure state
