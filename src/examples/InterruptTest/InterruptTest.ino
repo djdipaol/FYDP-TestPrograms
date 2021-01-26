@@ -17,7 +17,8 @@ volatile int count = 0;
 const byte tacho_pin = 2;//50;
 
 //PWM pin
-const int PWM = 5;
+const int PWM = 6;
+const int DIR = 4;
 
 //Speed setting
 int rpm = 60;
@@ -31,9 +32,13 @@ void setup() {
   Serial.begin(9600);
   
   pinMode(tacho_pin,INPUT);
-  attachInterrupt(digitalPinToInterrupt(tacho_pin), rotation, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(tacho_pin), rotation, FALLING);
   pinMode(PWM, OUTPUT);
+  analogWrite(PWM,0);
+  delay(1000);
   analogWrite(PWM,rpm);
+  pinMode(DIR, OUTPUT);
+  digitalWrite(DIR,LOW);
   prevTime=micros();
 }
 
@@ -41,7 +46,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   currTime=micros();
 
-  speeds[speedCount]=count/(currTime-prevTime);
+  speeds[speedCount]= (double)count/((currTime-prevTime)/1000000.0)*60.0;
 
   prevTime=currTime;
 
@@ -52,6 +57,8 @@ void loop() {
   avgSpeed = (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
   
   Serial.println("Average Speed: "+ (String)avgSpeed);
+
+  delay(1000); //the delay seems to help with accuracy, may just want a short time ~200
 }
 
 void rotation() {
