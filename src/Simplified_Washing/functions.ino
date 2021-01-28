@@ -23,6 +23,30 @@ void changeDirection() {
 }
 
 /**
+  Interrupt function used to track the rotations of the pulley
+  @params
+  @returns
+*/
+void rotation() {
+  magnetCount++;
+}
+
+/**
+  Calculate the speed of the pulley
+  @params
+  @returns
+*/
+double calcSpeed()
+{
+  currTime=micros();
+  speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+  prevTime=currTime;
+  magnetCount = 0;
+  speedArrayCount = (speedArrayCount+1)%5;
+  return (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
+}
+
+/**
    Initialize LCD screen for user selection
    @params
    @returns
@@ -127,6 +151,7 @@ void checkForPause(int state) {
 void startNextCycle() {
   Serial.println("End of state " + (String)programState);
   programState = programState + 1;
+  caseStartTime=millis(); //added as a way to record when each state starts
 }
 
 /**
@@ -146,7 +171,7 @@ void openValve() {
    @returns
 */
 void closeWater() {
-  if(caseStartTime == 0)
+  if(caseStartTime == 0) //this if may be unnecessary
   {
     caseStartTime = millis();
   }
@@ -160,6 +185,7 @@ void closeWater() {
   if (distance >= 400 || distance <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");
+    failureCode=7;
   }
   else {
     //Preliminary failure code 
@@ -237,11 +263,27 @@ void turnOffPump() {
   if (distance >= 400 || distance <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");
+    failureCode=7;
   }
+  
   else if (distance == 25) {
     digitalWrite(PUMP_OUT_ENABLE, LOW);
     pumpStatus = digitalRead(PUMP_OUT_ENABLE);
   }
+
+  //Preliminary failure code 
+  ////////////////////////////////////////////////////////////
+  if(initialDist == -1)
+  {
+    initialDist = distance;
+  }
+  if(millis()-caseStartTime>60000 && fabs(distance-initialDist)<0.5)
+  {
+    failureCode=6;
+    digitalWrite(PUMP_OUT_ENABLE, LOW); //Close the valve to stop water inlet
+    pumpStatus = digitalRead(PUMP_OUT_ENABLE);
+  }
+  /////////////////////////////////////////////////////////////
 }
 
 /**
@@ -256,4 +298,27 @@ bool checkPump() {
   else {
     return false;
   }
+}
+
+/**
+   Check water level
+   @params
+   @returns measurement of water level in cm
+*/
+float measureWaterLevel()
+{
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
+  float dur = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
+  float dist = (dur / 2) * 0.0344;
+  if (dist >= 400 || dist <= 2) {
+    Serial.print("Distance = ");
+    Serial.println("Out of range");
+    failureCode=7;
+    dist = -1;
+  }
+  return dist;
 }
