@@ -1,3 +1,19 @@
+// PID
+#include "src/Arduino-PID-Library/PID_v1.h"
+byte incomingByte;
+double kp = 0.1;
+double ki = 5;
+double kd = 0.000005;
+
+// Speed
+double speedTarget;
+double speedActual;
+double pwmOutput;
+PID myPID(&speedActual, &pwmOutput, &speedTarget, kp, ki, kd, DIRECT);
+long currentTimestamp = 0;
+long previousTimestamp = 0;
+long timeElapsed = 0;
+
 // LCD: http://wiki.sunfounder.cc/index.php?title=I2C_LCD2004
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
