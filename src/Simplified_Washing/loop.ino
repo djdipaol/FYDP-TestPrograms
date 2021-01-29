@@ -24,6 +24,17 @@ void setup() {
   pinMode(PWM, OUTPUT);
   pinMode(directionControl, OUTPUT);
   digitalWrite(directionControl, LOW);
+
+<<<<<<< HEAD
+  // PID
+  myPID.SetOutputLimits(-255, 255);
+  myPID.SetMode(AUTOMATIC);
+  previousTimestamp = micros();
+=======
+  //Tachometer
+  pinMode(TACHOMETER,INPUT);
+  attachInterrupt(digitalPinToInterrupt(TACHOMETER), rotation, FALLING);
+>>>>>>> d635b3dfdfa117ae4be70327f1aa0fe7ac125ccc
 }
 
 void loop() {
@@ -36,7 +47,7 @@ void loop() {
     case 1: { // User Selection
         xPos = analogRead(JOYSTICK_X);
         yPos = analogRead(JOYSTICK_Y);
-        delay(1000);
+        delay(500);
         if (digitalRead(JOYSTICK_PRESS) == LOW) {
           if (currentCursorLine == 1) {
             cycleRunTime = SMALL_CYCLE_TIME;
@@ -89,8 +100,7 @@ void loop() {
       }
     case 4: { // Check water level and close inlet valve
         //Failure code 1 notes: if water level does not change, set error code
-        //Failure code 2 notes: if water level does not stop, set error code
-        checkForPause(3);
+        checkForPause();
         closeWater();
         if(failureCode != 0)
         {
@@ -102,7 +112,17 @@ void loop() {
         break;
       }
     case 5: { // Run the motor for the washing cycle and display time
+        //Failure code 2 notes: if water level does not stop, set error code
+        if(failureCode != 0)
+        {
+          programState = 13;
+        }
+        if(distance - measureWaterLevel() > 4)//this value will need some tweaking
+        {
+          failureCode = 2;
+        }
         //Failure code 3 notes: if the motor speed does not change, set error code
+        checkForPause();
         remainingTimerTime = endTimerTime - millis();
         checkForPause();
         setMotorSpeed(60);
@@ -112,21 +132,34 @@ void loop() {
         break;
       }
     case 6: { //Stop motor
-        //Failure code 4 notes: if the motor speed does not fall to zero, set error code
         lcd.clear();
         setMotorSpeed(0);
+        magnetCount=0;
         startNextCycle();
         break;
       }
     case 7: { //Start drain pump
-        //Failure code 5 notes: if the water level does not lower, set error code
+        //Failure code 6 notes: if the water level does not lower, set error code
         turnOnPump();
         startNextCycle();
         break;
       }
     case 8: { //Check water level missing, Stop drain pump
         checkForPause();
+        //Failure code 4 notes: if the motor speed does not fall to zero, set error code
+        if(failureCode != 0)
+        {
+          programState = 13;
+        }
+        if(magnetCount != 0)//this value will need some tweaking
+        {
+          failureCode = 4;
+        }
         turnOffPump();
+        if(failureCode != 0)
+        {
+          programState = 13;
+        }
         if (checkPump) {
           if (isRinsed) {
             startNextCycle();
@@ -153,6 +186,16 @@ void loop() {
         //Failure code 4 notes: if the motor speed does not fall to zero, set error code
         lcd.clear();
         setMotorSpeed(0);
+        magnetCount=0;
+        delay(2000); //give motor 2 seconds to stop
+        if(magnetCount != 0)
+        {
+          failureCode = 4;
+        }
+        if(failureCode != 0)//this value will need some tweaking
+        {
+          programState = 13;
+        }
         startNextCycle();
         break;
       }
@@ -188,11 +231,11 @@ void loop() {
         }
         else if(failureCode==1)
         {
-          printString2(0,0,"Water valve entry failure");
+          printString2(0,0,"Water valve open failure");
         }
         else if(failureCode==2)
         {
-          printString2(0,0,"Water valve exit failure");
+          printString2(0,0,"Water valve close failure");
         }
         else if(failureCode==3)
         {
@@ -204,7 +247,19 @@ void loop() {
         }
         else if(failureCode==5)
         {
+          printString2(0,0,"Motor speed failure");
+        }
+        else if(failureCode==6)
+        {
           printString2(0,0,"Pump start failure");
+        }
+        else if(failureCode==7)
+        {
+          printString2(0,0,"US range failure");
+        }
+        else
+        {
+          printString2(0,0,"Fail code overflow");
         }
         break;
      }

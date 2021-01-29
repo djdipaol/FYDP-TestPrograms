@@ -1,3 +1,19 @@
+// PID
+#include "src/Arduino-PID-Library/PID_v1.h"
+byte incomingByte;
+double kp = 0.1;
+double ki = 5;
+double kd = 0.000005;
+
+// Speed
+double speedTarget;
+double speedActual;
+double pwmOutput;
+PID myPID(&speedActual, &pwmOutput, &speedTarget, kp, ki, kd, DIRECT);
+long currentTimestamp = 0;
+long previousTimestamp = 0;
+long timeElapsed = 0;
+
 // LCD: http://wiki.sunfounder.cc/index.php?title=I2C_LCD2004
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
@@ -19,11 +35,18 @@ int yPos = -1; //y position of the joystick
 const int LID = 30;
 
 // Tachometer
-const int TACHOMETER = 50;
+const int TACHOMETER = 2; //interrupt pins for mega are 2,3,18,19,20,21
 unsigned long RPM = 0;
 unsigned long tachometerRotationCount = 0; //used to track time for reversing the motor direction
 char remainingTime[8]; //used to print the remaining time
 float hall_thresh = 100.0; //used to track how many times the hall sensor for the tachometer has measured the magnet
+
+//Tachometer interrupt implementation
+volatile int magnetCount = 0; //used to count the times the magnet passes the Hall effect sensor
+double speeds[5] = {0,0,0,0,0}; //array used to calculated moving average
+int speedArrayCount=0; //counters for arrays
+unsigned long prevTime = 0; //time variable for speed calc
+unsigned long currTime = 0; //time variable for speed calc
 
 // Solenoid Valve and Pump Relays
 const int VALVE_IN_ENABLE = 2;

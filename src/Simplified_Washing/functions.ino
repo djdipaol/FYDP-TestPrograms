@@ -23,6 +23,30 @@ void changeDirection() {
 }
 
 /**
+  Interrupt function used to track the rotations of the pulley
+  @params
+  @returns
+*/
+void rotation() {
+  magnetCount++;
+}
+
+/**
+  Calculate the speed of the pulley
+  @params
+  @returns
+*/
+double calcSpeed()
+{
+  currTime=micros();
+  speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+  prevTime=currTime;
+  magnetCount = 0;
+  speedArrayCount = (speedArrayCount+1)%5;
+  return (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
+}
+
+/**
    Initialize LCD screen for user selection
    @params
    @returns
@@ -127,6 +151,7 @@ void checkForPause(int state) {
 void startNextCycle() {
   Serial.println("End of state " + (String)programState);
   programState = programState + 1;
+  caseStartTime=millis(); //added as a way to record when each state starts
 }
 
 /**
@@ -146,7 +171,7 @@ void openValve() {
    @returns
 */
 void closeWater() {
-  if(caseStartTime == 0)
+  if(caseStartTime == 0) //this if may be unnecessary
   {
     caseStartTime = millis();
   }
@@ -160,6 +185,7 @@ void closeWater() {
   if (distance >= 400 || distance <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");
+    failureCode=7;
   }
   else {
     //Preliminary failure code 
@@ -237,11 +263,27 @@ void turnOffPump() {
   if (distance >= 400 || distance <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");
+    failureCode=7;
   }
+  
   else if (distance == 25) {
     digitalWrite(PUMP_OUT_ENABLE, LOW);
     pumpStatus = digitalRead(PUMP_OUT_ENABLE);
   }
+
+  //Preliminary failure code 
+  ////////////////////////////////////////////////////////////
+  if(initialDist == -1)
+  {
+    initialDist = distance;
+  }
+  if(millis()-caseStartTime>60000 && fabs(distance-initialDist)<0.5)
+  {
+    failureCode=6;
+    digitalWrite(PUMP_OUT_ENABLE, LOW); //Close the valve to stop water inlet
+    pumpStatus = digitalRead(PUMP_OUT_ENABLE);
+  }
+  /////////////////////////////////////////////////////////////
 }
 
 /**
@@ -256,4 +298,79 @@ bool checkPump() {
   else {
     return false;
   }
+}
+
+/**
+<<<<<<< HEAD
+   Checks for user input into PID using Serial Plotter Graph Input
+   @params 
+   @returns 
+*/
+void checkInput() {
+  if (Serial.available() > 0) {
+    String command = Serial.readString();
+    command.replace(" ", "");
+    if (command.indexOf("p") >= 0) {
+      String textP = command.substring(command.indexOf("p") + 1, command.length());
+      kp = textP.toDouble();
+    }
+    else if (command.indexOf("i") >= 0) {
+      String textI = command.substring(command.indexOf("i") + 1, command.length());
+      ki = textI.toDouble();
+    }
+    else if (command.indexOf("d") >= 0) {
+      String textD = command.substring(command.indexOf("d") + 1, command.length());
+      kd = textD.toDouble();
+    }
+    myPID.SetTunings(kp,ki,kd);
+  }
+}
+
+/**
+   Runs one step in the PID Motor Control algorithm
+   @params 
+   @returns 
+*/
+void runMotorLoop() {
+// Check if user has changed  Kp, Ki, Kd
+  checkInput();
+  // Calculate time from start
+  timeElapsed = timeElapsed + micros() - previousTimestamp;
+  previousTimestamp = micros();
+  // Set speed target based on random sinusoidal function
+  speedTarget = 50 * sin(timeElapsed / 1000000);
+  //speedTarget = log(timeElapsed / 1000000);
+  // Simulate sensor as delayed PWM and random forcing
+  speedActual = pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 0;
+
+  if (myPID.Compute()) {
+    Serial.print("Input:" + (String)speedTarget + ",");
+    Serial.print("Actual:" + (String)speedActual + ",");
+    Serial.print("PWM:" + (String)pwmOutput + ",");
+    Serial.print("kP="+(String)kp+":0,");
+    Serial.print("ki="+(String)ki+":0,");
+    Serial.println("kd="+(String)kd+":0");
+  }
+=======
+   Check water level
+   @params
+   @returns measurement of water level in cm
+*/
+float measureWaterLevel()
+{
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
+  float dur = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
+  float dist = (dur / 2) * 0.0344;
+  if (dist >= 400 || dist <= 2) {
+    Serial.print("Distance = ");
+    Serial.println("Out of range");
+    failureCode=7;
+    dist = -1;
+  }
+  return dist;
+>>>>>>> d635b3dfdfa117ae4be70327f1aa0fe7ac125ccc
 }
