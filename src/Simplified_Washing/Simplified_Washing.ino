@@ -1,5 +1,6 @@
 // PID
 #include "src/Arduino-PID-Library/PID_v1.h"
+
 byte incomingByte;
 double kp = 0.1;
 double ki = 5;
@@ -43,8 +44,8 @@ float hall_thresh = 100.0; //used to track how many times the hall sensor for th
 
 //Tachometer interrupt implementation
 volatile int magnetCount = 0; //used to count the times the magnet passes the Hall effect sensor
-double speeds[5] = {0,0,0,0,0}; //array used to calculated moving average
-int speedArrayCount=0; //counters for arrays
+//double speeds[5] = {0,0,0,0,0}; //array used to calculated moving average
+//int speedArrayCount=0; //counters for arrays
 unsigned long prevTime = 0; //time variable for speed calc
 unsigned long currTime = 0; //time variable for speed calc
 

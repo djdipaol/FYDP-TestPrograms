@@ -108,6 +108,7 @@ void loop() {
         }
         else if (checkValve()) {
           startNextCycle();
+          caseStartTime = millis();
         }
         break;
       }
@@ -124,11 +125,15 @@ void loop() {
         //Failure code 3 notes: if the motor speed does not change, set error code
         checkForPause();
         remainingTimerTime = endTimerTime - millis();
-        checkForPause();
-        setMotorSpeed(60);
-        delay(2000);
-        setMotorSpeed(0);
-        startNextCycle();
+        //checkForPause();
+        //setMotorSpeed(60);
+        //delay(2000);
+        //setMotorSpeed(0);
+        runMotorLoop();
+        if(millis()-caseStartTime >= 30000)
+        {
+          startNextCycle();
+        }
         break;
       }
     case 6: { //Stop motor
