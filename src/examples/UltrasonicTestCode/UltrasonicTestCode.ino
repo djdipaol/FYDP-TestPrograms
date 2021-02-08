@@ -12,8 +12,8 @@ HC-SR04 Basic Demonstration
  
 // Hook up HC-SR04 with Trig to Arduino Pin 10, Echo to Arduino pin 13
  
-#define trigPin 10
-#define echoPin 13
+#define trigPin 9
+#define echoPin 10
  
 float duration, distance;
  

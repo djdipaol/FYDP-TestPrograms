@@ -7,7 +7,7 @@ LiquidCrystal_I2C lcd(0x27,20,4);
 
 int cursorPos = 1;
 
-const int SW_pin = 8; // digital pin connected to switch output
+const int SW_pin = 11; // digital pin connected to switch output
 const int X_pin = A0; // analog pin connected to X output
 const int Y_pin = A1; // analog pin connected to Y output
 

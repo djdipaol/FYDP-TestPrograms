@@ -1,6 +1,6 @@
 //Hall effect sensor test code
 
-int input = 2;
+int input = 7;
 
 
 void setup() {

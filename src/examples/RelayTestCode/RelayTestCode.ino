@@ -1,17 +1,30 @@
 //Relay test code
 //Setup shown here: https://howtomechatronics.com/tutorials/arduino/control-high-voltage-devices-arduino-relay-tutorial/
 
-int in1 = 7;
+//int in1 = 7;
+
+const int VALVE_IN_ENABLE = 3;
+const int PUMP_OUT_ENABLE = 13;
+
 void setup() {
   Serial.begin (9600);
-  pinMode(in1, OUTPUT);
-  digitalWrite(in1, HIGH);
+  //pinMode(VALVE_IN_ENABLE, OUTPUT);
+  //pinMode(PUMP_OUT_ENABLE, OUTPUT);
+  digitalWrite(VALVE_IN_ENABLE, LOW);
+  digitalWrite(PUMP_OUT_ENABLE,LOW);
+  delay(1000);
 }
 void loop() {
-  digitalWrite(in1, LOW);
-  Serial.println("LOW");
-  delay(6000);
-  //digitalWrite(in1, HIGH);
-  //Serial.println("HIGH");
-  //delay(3000);
+  //digitalWrite(VALVE_IN_ENABLE, HIGH);
+  //Serial.println("HIGH VALVE");
+  //delay(1000);
+  //digitalWrite(VALVE_IN_ENABLE, LOW);
+  //Serial.println("LOW Valve");
+  //delay(1000);
+  digitalWrite(PUMP_OUT_ENABLE, HIGH);
+  Serial.println("HIGH pump");
+  delay(10000);
+  //digitalWrite(PUMP_OUT_ENABLE, LOW);
+  //Serial.println("LOW pump");
+  //delay(1000);
 }
