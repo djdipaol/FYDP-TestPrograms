@@ -48,7 +48,7 @@ void loop() {
         xPos = analogRead(JOYSTICK_X);
         yPos = analogRead(JOYSTICK_Y);
         delay(500);
-        if (digitalRead(JOYSTICK_PRESS) == HIGH) {
+        if (digitalRead(JOYSTICK_PRESS) == LOW) {
           if (currentCursorLine == 1) {
             cycleRunTime = SMALL_CYCLE_TIME;
             levelValue = 21;
@@ -100,7 +100,7 @@ void loop() {
         if(distance < levelValue)
         {
           printString2(0,0, "Press button to start");
-          while(digitalRead(JOYSTICK_PRESS) == LOW){}
+          while(digitalRead(JOYSTICK_PRESS) == HIGH){} //When joystick is pressed = LOW
           startNextCycle();
         }
         break;
@@ -117,6 +117,8 @@ void loop() {
           startNextCycle();
         }
         break;*/
+        lcd.clear();
+        delay(1500);
         startNextCycle();
         endTimerTime=caseStartTime+2000000;
       }
@@ -140,7 +142,7 @@ void loop() {
         startNextCycle();*/
         runMotorLoop();
         displayTime(endTimerTime);
-        if(millis()-caseStartTime > 2000000)
+        if(millis()-caseStartTime > 300000)
         {
           setMotorSpeed(0);
           startNextCycle();

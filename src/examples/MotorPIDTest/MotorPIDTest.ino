@@ -5,7 +5,7 @@
 byte incomingByte;
 double kp = 0.1;
 double ki = 5;
-double kd = 0.000005;
+double kd = 0.1;
 
 // Speed
 double speedTarget;
@@ -30,7 +30,7 @@ volatile int magnetCount = 0;
 const byte tacho_pin = 2;//50;
 
 //PWM pin
-const int PWM = 6;
+const int PWM = 5;
 const int DIR = 4;
 
 //Speed setting
@@ -61,8 +61,15 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  runMotorLoop();
-  delay(800);
+  //runMotorLoop();
+  analogWrite(PWM,60);
+  
+  Serial.print("Magnet count:");
+  Serial.println(magnetCount);
+  
+  Serial.println(calcSpeed());
+  
+  delay(1100);
   //Serial.println("Loop");
 }
 
@@ -96,10 +103,10 @@ void runMotorLoop() {
   timeElapsed = timeElapsed + micros() - previousTimestamp;
   previousTimestamp = micros();
   // Set speed target based on random sinusoidal function
-  speedTarget = 90; ///* sin(timeElapsed / 1000000);
+  speedTarget = 60; ///* sin(timeElapsed / 1000000);
   //speedTarget = log(timeElapsed / 1000000);
   // Simulate sensor as delayed PWM and random forcing
-  speedActual = calcSpeed()/10.0;///pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 0;
+  speedActual = calcSpeed();///pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 0;
   if (myPID.Compute()) {
     Serial.print("Input:" + (String)speedTarget + ",");
     Serial.print("Actual:" + (String)speedActual + ",");
@@ -116,6 +123,8 @@ double calcSpeed()
 {
   currTime=micros();
   speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+  Serial.print("Time Difference: ");
+  Serial.println((currTime-prevTime)/1000000.0);
   prevTime=currTime;
   magnetCount = 0;
   speedArrayCount = (speedArrayCount+1)%5;

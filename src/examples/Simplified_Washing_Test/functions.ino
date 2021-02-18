@@ -41,13 +41,13 @@ double calcSpeed()
   if(micros()-prevTime >= 1100000)
   {
     currTime=micros();
-    //speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
-    double currSpeed = (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+    speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+    //double currSpeed = (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
     prevTime=currTime;
     magnetCount = 0;
-    //speedArrayCount = (speedArrayCount+1)%5;
-    //return (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
-    return currSpeed;
+    speedArrayCount = (speedArrayCount+1)%5;
+    return (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
+    //return currSpeed;
   }
   else
   {
@@ -128,9 +128,17 @@ bool checkLid() {
    @returns
 */
 void checkForPause() {
-  if (digitalRead(JOYSTICK_PRESS) == HIGH || checkLid()) {
-    Serial.println("Pausing cycle");
-    while (digitalRead(JOYSTICK_PRESS) == HIGH) {} // Wait for user to release button
+  if (digitalRead(JOYSTICK_PRESS) == LOW || checkLid()) {
+    Serial.print("Pausing cycle for ");
+    if(checkLid())
+    {
+      Serial.println("Lid ");
+    }
+    if(digitalRead(JOYSTICK_PRESS) == LOW)
+    {
+      Serial.println("Joystick ");
+    }
+    while (digitalRead(JOYSTICK_PRESS) == LOW) {} // Wait for user to release button
     lastSavedState = programState;
     programState = 12;
   }
@@ -331,6 +339,10 @@ void checkInput() {
       String textD = command.substring(command.indexOf("d") + 1, command.length());
       kd = textD.toDouble();
     }
+    else if (command.indexOf("s") >= 0) {
+      String textD = command.substring(command.indexOf("s") + 1, command.length());
+      speedTarget = textD.toDouble();
+    }
     myPID.SetTunings(kp,ki,kd);
   }
 }
@@ -349,7 +361,7 @@ void runMotorLoop() {
     timeElapsed = timeElapsed + micros() - previousTimestamp;
     previousTimestamp = micros();
     // Set speed target based on random sinusoidal function
-    speedTarget = 60 * sin(timeElapsed / 1000000);
+    //speedTarget = 200; //* sin(timeElapsed / 1000000);
     //speedTarget = log(timeElapsed / 1000000);
     // Simulate sensor as delayed PWM and random forcing
     speedActual = calcSpeed();//pwmOutput * 0.9 + random(0, 20) - random(0, 20) + 0;
@@ -357,12 +369,12 @@ void runMotorLoop() {
     if (myPID.Compute()) {
       Serial.print("Input:" + (String)speedTarget + ",");
       Serial.print("Actual:" + (String)speedActual + ",");
-      Serial.print("PWM:" + (String)pwmOutput + ",");
+      Serial.print("PWM:" + (String)(0.5*pwmOutput) + ",");
       Serial.print("kP="+(String)kp+":0,");
       Serial.print("ki="+(String)ki+":0,");
       Serial.println("kd="+(String)kd+":0");
     }
-    analogWrite(PWM,pwmOutput);
+    analogWrite(PWM,0.5*pwmOutput);
   }
 }
 /*=======

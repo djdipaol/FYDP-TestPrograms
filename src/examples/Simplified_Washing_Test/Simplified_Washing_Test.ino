@@ -2,12 +2,12 @@
 //#include "src/Arduino-PID-Library/PID_v1.h"
 #include <PID_v1.h>
 byte incomingByte;
-double kp = 0.1;
-double ki = 5;
-double kd = 0.000005;
+double kp = 0.2;
+double ki = 3;
+double kd = 0.2;
 
 // Speed
-double speedTarget;
+double speedTarget = 60;
 double speedActual;
 double pwmOutput;
 PID myPID(&speedActual, &pwmOutput, &speedTarget, kp, ki, kd, DIRECT);
