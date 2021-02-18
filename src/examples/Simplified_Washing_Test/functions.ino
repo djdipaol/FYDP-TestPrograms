@@ -391,6 +391,7 @@ float measureWaterLevel()
   digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
   float dur = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
   float dist = (dur / 2) * 0.0344;
+  Serial.println(dist);
   if (dist >= 400 || dist <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");

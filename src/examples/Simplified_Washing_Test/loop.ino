@@ -47,7 +47,7 @@ void loop() {
     case 1: { // User Selection
         xPos = analogRead(JOYSTICK_X);
         yPos = analogRead(JOYSTICK_Y);
-        delay(500);
+        delay(200);
         if (digitalRead(JOYSTICK_PRESS) == LOW) {
           if (currentCursorLine == 1) {
             cycleRunTime = SMALL_CYCLE_TIME;
@@ -85,27 +85,27 @@ void loop() {
         }
         break;
       }
-    case 2: { // Check door is closed
+    case 2: { //Update LCD screen to inform user about water level
         printString2(0, 0, "Please add water");
         delay(2000);
         startNextCycle();
         break;
       }
-    case 3: { // Open inlet valve
+    case 3: { //Measure water level for user
         distance = measureWaterLevel();
-        sprintf(levelString, "%f + cm",distance-levelValue); //may need to change levelValue above
-        printString2(0, 0, "Increase level by:");
-        printString(0, 1, levelString);
-        delay(500);
+        //sprintf(levelString, "%f + cm",distance);//-levelValue); //may need to change levelValue above
+        printString(0, 1, "Increase level by:");
+        printString(0, 2, (String)distance);
+        delay(100);
         if(distance < levelValue)
         {
-          printString2(0,0, "Press button to start");
+          printString2(0,0, "Press to start");
           while(digitalRead(JOYSTICK_PRESS) == HIGH){} //When joystick is pressed = LOW
           startNextCycle();
         }
         break;
       }
-    case 4: { // Check water level and close inlet valve
+    case 4: { // Clear screen and set time
         //Failure code 1 notes: if water level does not change, set error code
         /*checkForPause();
         closeWater();
@@ -120,7 +120,8 @@ void loop() {
         lcd.clear();
         delay(1500);
         startNextCycle();
-        endTimerTime=caseStartTime+2000000;
+        endTimerTime=caseStartTime+300000;
+        break;
       }
     case 5: { // Run the motor for the washing cycle and display time
         //Failure code 2 notes: if water level does not stop, set error code
@@ -142,13 +143,74 @@ void loop() {
         startNextCycle();*/
         runMotorLoop();
         displayTime(endTimerTime);
-        if(millis()-caseStartTime > 300000)
+        if(millis()-caseStartTime > 300000) //Stop motor after time ends
         {
           setMotorSpeed(0);
           startNextCycle();
         }
         break;
       }
+    case 6: {//Turn on pump
+      checkForPause();
+      if(checkPump())
+      {
+        turnOnPump();
+      }
+      if(abs(distance - emptyLevel)<0.1)
+      {
+        if(drainTimer = 0)
+        {
+          drainTimer = millis();
+        }
+        if(millis()-drainTimer > 120000)
+        {
+          digitalWrite(PUMP_OUT_ENABLE, LOW);
+          startNextCycle();
+        }
+      }
+      else
+      {
+        distance = measureWaterLevel();
+        sprintf(levelString, "%f + cm",distance);
+        printString2(0, 0, levelString);
+      }
+      
+      break;
+    }
+    case 7: {
+      if(!isRinsed)
+      {
+        programState = 2;
+        isRinsed = true;
+      }
+      else
+      {
+        speedTarget=200;
+        lcd.clear();
+        delay(500);
+        startNextCycle();
+        endTimerTime=caseStartTime+300000;
+      }
+      
+      break;
+    }
+    case 8: {
+      checkForPause();
+      runMotorLoop();
+      displayTime(endTimerTime);
+      if(millis()-caseStartTime > 300000) //Stop motor after time ends
+      {
+        setMotorSpeed(0);
+        startNextCycle();
+      }
+      break;
+    }
+    case 9: {
+      printString2(0,0,"Completed");
+      while(!checkLid()){}
+      programState = 0;
+      break;
+    }
     case 12: { // Pause
         setMotorSpeed(0);
         closeWater();

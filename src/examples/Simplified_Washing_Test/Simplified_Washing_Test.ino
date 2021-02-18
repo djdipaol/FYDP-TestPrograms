@@ -60,9 +60,11 @@ const int ULTRASONIC_TRIGGER_PIN = 9;
 const int ULTRASONIC_ECHO_PIN = 10;
 float duration;
 float distance;
+float emptyLevel = 35; //this is the distance of the drum when there is not water
 bool isRinsed = false;
 char levelString[8];
-float levelValue;
+float levelValue = 27;
+unsigned long drainTimer = 0;
 
 // Cycle States & Timing
 int programState = 0;
