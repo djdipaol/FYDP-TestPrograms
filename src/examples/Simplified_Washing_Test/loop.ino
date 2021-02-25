@@ -106,17 +106,6 @@ void loop() {
         break;
       }
     case 4: { // Clear screen and set time
-        //Failure code 1 notes: if water level does not change, set error code
-        /*checkForPause();
-        closeWater();
-        if(failureCode != 0)
-        {
-          programState = 13;
-        }
-        else if (checkValve()) {
-          startNextCycle();
-        }
-        break;*/
         lcd.clear();
         delay(1500);
         startNextCycle();
@@ -124,61 +113,94 @@ void loop() {
         break;
       }
     case 5: { // Run the motor for the washing cycle and display time
-        //Failure code 2 notes: if water level does not stop, set error code
-        /*if(failureCode != 0)
+        if(failureCode != 0)
         {
           programState = 13;
         }
-        if(distance - measureWaterLevel() > 4)//this value will need some tweaking
+        else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
         {
-          failureCode = 2;
-        }*/
-        //Failure code 3 notes: if the motor speed does not change, set error code
-        checkForPause();
-        /*remainingTimerTime = endTimerTime - millis();
-        checkForPause();
-        setMotorSpeed(60);
-        delay(2000);
-        setMotorSpeed(0);
-        startNextCycle();*/
-        runMotorLoop();
-        displayTime(endTimerTime);
-        if(millis()-caseStartTime > 300000) //Stop motor after time ends
+          failureCode = 3;
+        }
+        else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
         {
-          setMotorSpeed(0);
-          startNextCycle();
+          overshootCount++;
+          if(overshootCount > 5)
+          {
+            failureCode = 5;
+          }
+        }
+        else
+        {
+          checkForPause();
+          runMotorLoop();
+          displayTime(endTimerTime);
+          if(speedActual == 0)
+          {
+            stoppedCount++;
+          }
+          else if(speedActual != 0)
+          {
+            stoppedCount = 0;
+          }
+          
+          if(millis()-caseStartTime > 300000) //Stop motor after time ends
+          {
+            setMotorSpeed(0);
+            startNextCycle();
+            delay(500);
+          }
         }
         break;
       }
     case 6: {//Turn on pump
       checkForPause();
-      if(checkPump())
+      if(failureCode != 0) //check for failure codes
       {
-        turnOnPump();
+        programState = 13;
       }
-      if(abs(distance - emptyLevel)<0.1)
+      else if(calcSpeed()>0) //check that the motor stops
       {
-        if(drainTimer = 0)
+        failureCode = 4;
+      }
+      else //run case as expected
+      {
+        if(checkPump())
         {
-          drainTimer = millis();
+          turnOnPump();
+          initialDist = measureWaterLevel();
         }
-        if(millis()-drainTimer > 120000)
+        if(abs(distance - emptyLevel)<0.1)
         {
-          digitalWrite(PUMP_OUT_ENABLE, LOW);
-          startNextCycle();
+          if(drainTimer == 0)
+          {
+            drainTimer = millis();
+          }
+          if(millis()-drainTimer > 120000)
+          {
+            digitalWrite(PUMP_OUT_ENABLE, LOW);
+            drainTimer = 0;
+            startNextCycle();
+          }
+        }
+        else
+        {
+          distance = measureWaterLevel();
+          sprintf(levelString, "%f + cm",distance);
+          printString2(0, 0, levelString);
+          if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
+          {
+            failureCode = 6;
+          }
         }
       }
-      else
-      {
-        distance = measureWaterLevel();
-        sprintf(levelString, "%f + cm",distance);
-        printString2(0, 0, levelString);
-      }
-      
       break;
     }
     case 7: {
-      if(!isRinsed)
+      if(failureCode != 0) //check for failure codes
+      {
+        programState = 13;
+      }
+      else if(!isRinsed)
       {
         programState = 2;
         isRinsed = true;
@@ -195,14 +217,43 @@ void loop() {
       break;
     }
     case 8: {
-      checkForPause();
-      runMotorLoop();
-      displayTime(endTimerTime);
-      if(millis()-caseStartTime > 300000) //Stop motor after time ends
-      {
-        setMotorSpeed(0);
-        startNextCycle();
-      }
+      if(failureCode != 0)
+        {
+          programState = 13;
+        }
+        else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
+        {
+          failureCode = 3;
+        }
+        else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
+        {
+          overshootCount++;
+          if(overshootCount > 5)
+          {
+            failureCode = 5;
+          }
+        }
+        else
+        {
+          checkForPause();
+          runMotorLoop();
+          displayTime(endTimerTime);
+          if(speedActual == 0)
+          {
+            stoppedCount++;
+          }
+          else if(speedActual != 0)
+          {
+            stoppedCount = 0;
+          }
+          
+          if(millis()-caseStartTime > 300000) //Stop motor after time ends
+          {
+            setMotorSpeed(0);
+            startNextCycle();
+            delay(500);
+          }
+        }
       break;
     }
     case 9: {
@@ -213,8 +264,9 @@ void loop() {
     }
     case 12: { // Pause
         setMotorSpeed(0);
-        closeWater();
-        turnOffPump();
+        closeWater(); //without valve, this function does not do anything
+        //turnOffPump(); we may want to rework this function
+        digitalWrite(PUMP_OUT_ENABLE, LOW); //used for now in place of turnOffPump()
         printString2(0, 0, "Paused");
         while (digitalRead(JOYSTICK_PRESS) == HIGH) {}
         while (digitalRead(JOYSTICK_PRESS == LOW)) {}
@@ -229,17 +281,18 @@ void loop() {
         //Failure Code State, start by turning high power device off
         setMotorSpeed(0);
         closeWater();
-        turnOffPump();
+        //turnOffPump();
+        digitalWrite(PUMP_OUT_ENABLE, LOW); //used for now in place of turnOffPump()
         //using an if statement for now, can possible make a switch statement
         if(failureCode==0)
         {
           printString2(0,0,"Undefined Failure");
         }
-        else if(failureCode==1)
+        else if(failureCode==1) //this should not appear right now as the valve is unused
         {
           printString2(0,0,"Water valve open failure");
         }
-        else if(failureCode==2)
+        else if(failureCode==2) //this should not appear right now as the valve is unused
         {
           printString2(0,0,"Water valve close failure");
         }
@@ -259,7 +312,7 @@ void loop() {
         {
           printString2(0,0,"Pump start failure");
         }
-        else if(failureCode==7)
+        else if(failureCode==7) //this failure code is incorporated into the measureWaterLevelFunction
         {
           printString2(0,0,"US range failure");
         }

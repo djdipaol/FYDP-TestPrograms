@@ -60,6 +60,7 @@ const int ULTRASONIC_TRIGGER_PIN = 9;
 const int ULTRASONIC_ECHO_PIN = 10;
 float duration;
 float distance;
+float initialDist = -1; //used to check if the water level changes
 float emptyLevel = 35; //this is the distance of the drum when there is not water
 bool isRinsed = false;
 char levelString[8];
@@ -81,5 +82,7 @@ unsigned long endTimerTime = 0;
 unsigned long remainingTimerTime = 0;
 
 int failureCode = 0; //int used for identifying different failure states
-float initialDist = -1; //used for checking water level for failure codes
+int stoppedCount = 0; //used to check that the motor starts to move
+int overshootCount = 0; //used to check that the motor eventually settles to within a tolerance
+int speedTol = 30; //this value will define the allowable speed tolerance in rpm
 unsigned long caseStartTime = 0; //used to track when each case starts, used for failure state
