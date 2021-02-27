@@ -41,6 +41,7 @@ void loop() {
   switch (programState) {
     case 0: { // Start screen
         initializeScreen();
+        isRinsed = false;
         startNextCycle();
         break;
       }
@@ -87,17 +88,21 @@ void loop() {
       }
     case 2: { //Update LCD screen to inform user about water level
         printString2(0, 0, "Please add water");
-        delay(2000);
         startNextCycle();
         break;
       }
     case 3: { //Measure water level for user
+        if(failureCode != 0) //this transition should only occur if the Ultrasonic range is out of bounds
+        {
+          lastSavedState = programState;
+          programState = 13;
+        }
         distance = measureWaterLevel();
         //sprintf(levelString, "%f + cm",distance);//-levelValue); //may need to change levelValue above
         printString(0, 1, "Increase level by:");
         printString(0, 2, (String)distance);
         delay(100);
-        if(distance < levelValue)
+        if(distance < levelValue && distance > minMeasurement)
         {
           printString2(0,0, "Press to start");
           while(digitalRead(JOYSTICK_PRESS) == HIGH){} //When joystick is pressed = LOW
@@ -107,7 +112,7 @@ void loop() {
       }
     case 4: { // Clear screen and set time
         lcd.clear();
-        delay(1500);
+        delay(50);
         startNextCycle();
         endTimerTime=caseStartTime+300000;
         break;
@@ -115,11 +120,13 @@ void loop() {
     case 5: { // Run the motor for the washing cycle and display time
         if(failureCode != 0)
         {
+          lastSavedState = programState;
           programState = 13;
         }
         else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
         {
           failureCode = 3;
+          stoppedCount = 0;
         }
         else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
         {
@@ -127,6 +134,7 @@ void loop() {
           if(overshootCount > 5)
           {
             failureCode = 5;
+            overshootCount = 0;
           }
         }
         else
@@ -156,6 +164,7 @@ void loop() {
       checkForPause();
       if(failureCode != 0) //check for failure codes
       {
+        lastSavedState = programState;
         programState = 13;
       }
       else if(calcSpeed()>0) //check that the motor stops
@@ -198,6 +207,7 @@ void loop() {
     case 7: {
       if(failureCode != 0) //check for failure codes
       {
+        lastSavedState = programState;
         programState = 13;
       }
       else if(!isRinsed)
@@ -219,11 +229,13 @@ void loop() {
     case 8: {
       if(failureCode != 0)
         {
+          lastSavedState = programState;
           programState = 13;
         }
         else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
         {
           failureCode = 3;
+          stoppedCount = 0;
         }
         else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
         {
@@ -231,6 +243,7 @@ void loop() {
           if(overshootCount > 5)
           {
             failureCode = 5;
+            overshootCount =0;
           }
         }
         else
@@ -320,10 +333,14 @@ void loop() {
         {
           printString2(0,0,"Fail code overflow");
         }
+
+        while (digitalRead(JOYSTICK_PRESS) == HIGH) {}
+        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        programState = lastSavedState;
         break;
      }
       default: { //default state used as an error state
-          printString2(0, 0, "Error code 100");
+          printString2(0, 0, "Default case");
           delay(1000);
           programState = 0;
           break;

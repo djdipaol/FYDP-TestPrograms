@@ -62,6 +62,7 @@ float duration;
 float distance;
 float initialDist = -1; //used to check if the water level changes
 float emptyLevel = 35; //this is the distance of the drum when there is not water
+float minMeasurement = 10; //the measure level should not fall below this value, if it does there is an issue
 bool isRinsed = false;
 char levelString[8];
 float levelValue = 27;
