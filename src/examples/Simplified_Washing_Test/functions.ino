@@ -38,10 +38,10 @@ void rotation() {
 */
 double calcSpeed()
 {
-  if(micros()-prevTime >= 1100000)
+  if(micros()-prevTime >= 5100)
   {
     currTime=micros();
-    speeds[speedArrayCount]= (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+    speeds[speedArrayCount]= ((double)magnetCount/2.0)/((currTime-prevTime)/1000000.0)*60.0;
     //double currSpeed = (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
     prevTime=currTime;
     magnetCount = 0;
@@ -113,7 +113,7 @@ void displayTime(unsigned long endTime) {
    @returns TRUE if open, FALSE if closed
 */
 bool checkLid() {
-  if (digitalRead(LID) != 0) {
+  if (digitalRead(LID) != LOW) {
     return true;
   }
   else {
@@ -134,11 +134,11 @@ void checkForPause() {
     {
       Serial.println("Lid ");
     }
-    if(digitalRead(JOYSTICK_PRESS) == LOW)
+    else if(digitalRead(JOYSTICK_PRESS) == LOW)
     {
       Serial.println("Joystick ");
     }
-    while (digitalRead(JOYSTICK_PRESS) == LOW) {} // Wait for user to release button
+    //while (digitalRead(JOYSTICK_PRESS) == LOW) {} // Wait for user to release button
     lastSavedState = programState;
     programState = 12;
   }
@@ -202,7 +202,7 @@ void closeWater() {
   if (distance >= 400 || distance <= 2) {
     Serial.print("Distance = ");
     Serial.println("Out of range");
-    failureCode=7;
+    //failureCode=7;
   }
   else {
     //Preliminary failure code 

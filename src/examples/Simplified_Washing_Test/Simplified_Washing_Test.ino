@@ -2,9 +2,9 @@
 //#include "src/Arduino-PID-Library/PID_v1.h"
 #include <PID_v1.h>
 byte incomingByte;
-double kp = 0.2;
+double kp = 0.4;
 double ki = 3;
-double kd = 0.2;
+double kd = 0;
 
 // Speed
 double speedTarget = 60;
@@ -33,7 +33,7 @@ int xPos = -1; //x position of the joystick
 int yPos = -1; //y position of the joystick
 
 // LID
-const int LID = 30;
+const int LID = 7;
 
 // Tachometer
 const int TACHOMETER = 2; //interrupt pins for mega are 2,3,18,19,20,21

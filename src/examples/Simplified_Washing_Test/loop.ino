@@ -38,6 +38,10 @@ void setup() {
 }
 
 void loop() {
+  Serial.print("Current state: "); //remove later
+  Serial.println(programState);
+  Serial.print("Failure Code: "); //remove later
+  Serial.println(failureCode);
   switch (programState) {
     case 0: { // Start screen
         initializeScreen();
@@ -162,12 +166,13 @@ void loop() {
       }
     case 6: {//Turn on pump
       checkForPause();
+      calcSpeed();
       if(failureCode != 0) //check for failure codes
       {
         lastSavedState = programState;
         programState = 13;
       }
-      else if(calcSpeed()>0) //check that the motor stops
+      else if(speeds[4]>0) //check that the motor stops, using most recent speed
       {
         failureCode = 4;
       }
@@ -198,7 +203,7 @@ void loop() {
           printString2(0, 0, levelString);
           if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
           {
-            failureCode = 6;
+            //failureCode = 6; //uncomment this
           }
         }
       }
@@ -237,17 +242,18 @@ void loop() {
           failureCode = 3;
           stoppedCount = 0;
         }
-        else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
-        {
-          overshootCount++;
-          if(overshootCount > 5)
-          {
-            failureCode = 5;
-            overshootCount =0;
-          }
-        }
         else
         {
+          if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
+          {
+            overshootCount++;
+            if(overshootCount > 5)
+            {
+              failureCode = 5;
+              overshootCount =0;
+            }
+          }
+          
           checkForPause();
           runMotorLoop();
           displayTime(endTimerTime);
@@ -282,12 +288,14 @@ void loop() {
         digitalWrite(PUMP_OUT_ENABLE, LOW); //used for now in place of turnOffPump()
         printString2(0, 0, "Paused");
         while (digitalRead(JOYSTICK_PRESS) == HIGH) {}
-        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        while (digitalRead(JOYSTICK_PRESS) == LOW) {}
         if (remainingTimerTime != 0) {
           endTimerTime = ((remainingTimerTime * 60UL) * 1000) + millis(); //update final time to account for the pause that has occurred
           remainingTimerTime = 0; //reset the remainingTimerTime variable
         }
         programState = lastSavedState;
+        delay(500);
+        lcd.clear();
         break;
     }
      case 13: {
@@ -335,7 +343,8 @@ void loop() {
         }
 
         while (digitalRead(JOYSTICK_PRESS) == HIGH) {}
-        while (digitalRead(JOYSTICK_PRESS == LOW)) {}
+        while (digitalRead(JOYSTICK_PRESS) == LOW) {}
+        failureCode = 0; //reset failure code before returning to previous state
         programState = lastSavedState;
         break;
      }
