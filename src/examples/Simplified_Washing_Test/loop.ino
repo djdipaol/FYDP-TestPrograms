@@ -38,14 +38,15 @@ void setup() {
 }
 
 void loop() {
-  Serial.print("Current state: "); //remove later
+  /*Serial.print("Current state: "); //remove later
   Serial.println(programState);
   Serial.print("Failure Code: "); //remove later
-  Serial.println(failureCode);
+  Serial.println(failureCode);*/
   switch (programState) {
     case 0: { // Start screen
         initializeScreen();
         isRinsed = false;
+        maxSpeed = 60;
         startNextCycle();
         break;
       }
@@ -144,6 +145,45 @@ void loop() {
         else
         {
           checkForPause();
+
+          switch(profileStep)
+          {
+            case 0:
+              speedTarget += speedIncrement;
+              if(speedTarget >= maxSpeed)
+              {
+                speedTarget = maxSpeed;
+                plateauTime = millis();
+                profileStep = 1;
+              }
+              break;
+            case 1:
+              if(millis()-plateauTime > 10000)
+              {
+                profileStep = 2;
+              }
+              break;
+            case 2:
+              speedTarget -= speedIncrement;
+              if(speedTarget <= 0)
+              {
+                speedTarget = 0;
+                plateauTime = millis();
+                profileStep=3;
+              }
+              break;
+            case 3:
+              if(millis()-plateauTime > 500)
+              {
+                profileStep = 0;
+                changeDirection();
+              }
+              break;
+            default:
+              Serial.println("Speed profile error");
+              break;
+          }
+          
           runMotorLoop();
           displayTime(endTimerTime);
           if(speedActual == 0)
@@ -159,6 +199,8 @@ void loop() {
           {
             setMotorSpeed(0);
             startNextCycle();
+            profileStep = 0;
+            speedTarget = 0;
             delay(500);
           }
         }
@@ -203,7 +245,7 @@ void loop() {
           printString2(0, 0, levelString);
           if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
           {
-            //failureCode = 6; //uncomment this
+            failureCode = 6; //uncomment this
           }
         }
       }
@@ -222,7 +264,7 @@ void loop() {
       }
       else
       {
-        speedTarget=200;
+        maxSpeed=200;
         lcd.clear();
         delay(500);
         startNextCycle();
@@ -255,6 +297,45 @@ void loop() {
           }
           
           checkForPause();
+
+          switch(profileStep)
+          {
+            case 0:
+              speedTarget += speedIncrement;
+              if(speedTarget >= maxSpeed)
+              {
+                speedTarget = maxSpeed; 
+                plateauTime = millis();
+                profileStep = 1;
+              }
+              break;
+            case 1:
+              if(millis()-plateauTime > 10000)
+              {
+                profileStep = 2;
+              }
+              break;
+            case 2:
+              speedTarget -= speedIncrement;
+              if(speedTarget <= 0)
+              {
+                speedTarget = 0;
+                plateauTime = millis();
+                profileStep=3;
+              }
+              break;
+            case 3:
+              if(millis()-plateauTime > 500)
+              {
+                profileStep = 0;
+                changeDirection();
+              }
+              break;
+            default:
+              Serial.println("Speed profile error");
+              break;
+          }
+          
           runMotorLoop();
           displayTime(endTimerTime);
           if(speedActual == 0)
@@ -270,6 +351,8 @@ void loop() {
           {
             setMotorSpeed(0);
             startNextCycle();
+            speedTarget = 0;
+            profileStep = 0;
             delay(500);
           }
         }

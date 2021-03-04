@@ -7,7 +7,7 @@ double ki = 3;
 double kd = 0;
 
 // Speed
-double speedTarget = 60;
+double speedTarget = 0; //was 60 previously
 double speedActual;
 double pwmOutput;
 PID myPID(&speedActual, &pwmOutput, &speedTarget, kp, ki, kd, DIRECT);
@@ -24,6 +24,13 @@ int currentCursorLine = 1; //used to track what line of the LCD screen the curso
 // Motor
 const int PWM  = 5; //make sure this is a vaLID PWM  pin
 const int directionControl = 4;
+
+
+//Speed Profile variables
+int profileStep = 0;
+unsigned long plateauTime = 0;
+double speedIncrement = 0.01;
+double maxSpeed = 60;
 
 // Joystick
 const int JOYSTICK_X = A0;
@@ -82,6 +89,7 @@ unsigned long startTimerTime = 0;
 unsigned long endTimerTime = 0;
 unsigned long remainingTimerTime = 0;
 
+//FailureCode
 int failureCode = 0; //int used for identifying different failure states
 int stoppedCount = 0; //used to check that the motor starts to move
 int overshootCount = 0; //used to check that the motor eventually settles to within a tolerance
