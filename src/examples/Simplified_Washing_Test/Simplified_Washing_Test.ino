@@ -29,7 +29,7 @@ const int directionControl = 4;
 //Speed Profile variables
 int profileStep = 0;
 unsigned long plateauTime = 0;
-double speedIncrement = 0.01;
+double speedIncrement = 0.1;
 double maxSpeed = 60;
 
 // Joystick
@@ -74,6 +74,7 @@ bool isRinsed = false;
 char levelString[8];
 float levelValue = 27;
 unsigned long drainTimer = 0;
+float displayDist = -1;
 
 // Cycle States & Timing
 int programState = 0;
@@ -88,10 +89,14 @@ int lastSavedState = 0; //this is used to determine where to return to after the
 unsigned long startTimerTime = 0;
 unsigned long endTimerTime = 0;
 unsigned long remainingTimerTime = 0;
+unsigned long stoppedTimer = 0;
+unsigned long speedTimer = 0;
+int waterLevelVerificationCounter = 0;
 
 //FailureCode
 int failureCode = 0; //int used for identifying different failure states
 int stoppedCount = 0; //used to check that the motor starts to move
 int overshootCount = 0; //used to check that the motor eventually settles to within a tolerance
-int speedTol = 30; //this value will define the allowable speed tolerance in rpm
+int speedTol = 45; //this value will define the allowable speed tolerance in rpm
+int overshootLimit = 30; // this value defines max of overshoot before count increases
 unsigned long caseStartTime = 0; //used to track when each case starts, used for failure state

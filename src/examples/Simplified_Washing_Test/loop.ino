@@ -33,7 +33,7 @@ void setup() {
 //=======
   //Tachometer
   pinMode(TACHOMETER,INPUT);
-  attachInterrupt(digitalPinToInterrupt(TACHOMETER), rotation, FALLING);
+  attachInterrupt(digitalPinToInterrupt(TACHOMETER), rotation, CHANGE);
 //>>>>>>> d635b3dfdfa117ae4be70327f1aa0fe7ac125ccc
 }
 
@@ -105,14 +105,30 @@ void loop() {
         distance = measureWaterLevel();
         //sprintf(levelString, "%f + cm",distance);//-levelValue); //may need to change levelValue above
         printString(0, 1, "Increase level by:");
-        printString(0, 2, (String)distance);
+        displayDist = levelValue-distance;
+        if(displayDist < 0)
+        {
+          displayDist = 0;
+        }
+        printString(0, 2, (String)(displayDist));
         delay(100);
-        if(distance < levelValue && distance > minMeasurement)
+        Serial.println(waterLevelVerificationCounter);
+        if(distance < levelValue && distance > minMeasurement && !checkLid())
+        {
+          waterLevelVerificationCounter++;
+        }
+        else {
+          if (waterLevelVerificationCounter > 0) {
+           waterLevelVerificationCounter--;
+          }
+        }
+        if (waterLevelVerificationCounter > 4)
         {
           printString2(0,0, "Press to start");
           while(digitalRead(JOYSTICK_PRESS) == HIGH){} //When joystick is pressed = LOW
           startNextCycle();
         }
+        //startNextCycle();//REMOVE
         break;
       }
     case 4: { // Clear screen and set time
@@ -123,20 +139,21 @@ void loop() {
         break;
       }
     case 5: { // Run the motor for the washing cycle and display time
-        if(failureCode != 0)
+        if(failureCode != 0) // No failure if 0
         {
           lastSavedState = programState;
           programState = 13;
         }
-        else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
+        else if(stoppedCount > 15)//Failure code 3 notes: if the motor speed does not change, set error code
         {
           failureCode = 3;
           stoppedCount = 0;
         }
-        else if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
+        else if(abs(speedActual-speedTarget) > speedTol && millis()-speedTimer > 10000)//Failure code 5: the motor speed does not settle
         {
           overshootCount++;
-          if(overshootCount > 5)
+          speedTimer = millis();
+          if(overshootCount > overshootLimit)
           {
             failureCode = 5;
             overshootCount = 0;
@@ -145,57 +162,63 @@ void loop() {
         else
         {
           checkForPause();
-
           switch(profileStep)
           {
             case 0:
-              speedTarget += speedIncrement;
+              /*speedTarget += speedIncrement;
               if(speedTarget >= maxSpeed)
               {
-                speedTarget = maxSpeed;
+                speedTarget = maxSpeed; 
                 plateauTime = millis();
                 profileStep = 1;
-              }
+              }*/
+              speedTarget = maxSpeed; 
+              plateauTime = millis();
+              profileStep = 1;
               break;
             case 1:
-              if(millis()-plateauTime > 10000)
+              if(millis()-plateauTime > 30000)
               {
                 profileStep = 2;
               }
               break;
             case 2:
-              speedTarget -= speedIncrement;
+              /*speedTarget -= speedIncrement;
               if(speedTarget <= 0)
               {
                 speedTarget = 0;
                 plateauTime = millis();
                 profileStep=3;
-              }
+              }*/
+              speedTarget = 0;
+              plateauTime = millis();
+              profileStep=3;
               break;
             case 3:
-              if(millis()-plateauTime > 500)
+              if(millis()-plateauTime > 2000)
               {
                 profileStep = 0;
                 changeDirection();
               }
               break;
             default:
-              Serial.println("Speed profile error");
+              //Serial.println("Speed profile error");
               break;
           }
           
           runMotorLoop();
           displayTime(endTimerTime);
-          if(speedActual == 0)
+          if(speedActual == 0 && millis()-stoppedTimer > 10000)
           {
             stoppedCount++;
+            stoppedTimer = millis();
           }
           else if(speedActual != 0)
           {
             stoppedCount = 0;
           }
           
-          if(millis()-caseStartTime > 300000) //Stop motor after time ends
+          if(millis()-caseStartTime > 30000) //Stop motor after time ends
           {
             setMotorSpeed(0);
             startNextCycle();
@@ -214,10 +237,10 @@ void loop() {
         lastSavedState = programState;
         programState = 13;
       }
-      else if(speeds[4]>0) //check that the motor stops, using most recent speed
+      /*else if(speeds[4]>0) //check that the motor stops, using most recent speed
       {
         failureCode = 4;
-      }
+      }*/
       else //run case as expected
       {
         if(checkPump())
@@ -225,13 +248,13 @@ void loop() {
           turnOnPump();
           initialDist = measureWaterLevel();
         }
-        if(abs(distance - emptyLevel)<0.1)
+        if(abs(distance - emptyLevel)<2.5)
         {
           if(drainTimer == 0)
           {
             drainTimer = millis();
           }
-          if(millis()-drainTimer > 120000)
+          if(millis()-drainTimer > 5000)
           {
             digitalWrite(PUMP_OUT_ENABLE, LOW);
             drainTimer = 0;
@@ -241,12 +264,13 @@ void loop() {
         else
         {
           distance = measureWaterLevel();
-          sprintf(levelString, "%f + cm",distance);
-          printString2(0, 0, levelString);
-          if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
+          //sprintf(levelString, "%f + cm",distance);
+          //printString2(0, 0, levelString);
+          printString(0, 2, (String)(distance));
+          /*if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
           {
             failureCode = 6; //uncomment this
-          }
+          }*/
         }
       }
       break;
@@ -310,7 +334,7 @@ void loop() {
               }
               break;
             case 1:
-              if(millis()-plateauTime > 10000)
+              if(millis()-plateauTime > 30000)
               {
                 profileStep = 2;
               }
@@ -325,14 +349,14 @@ void loop() {
               }
               break;
             case 3:
-              if(millis()-plateauTime > 500)
+              if(millis()-plateauTime > 1000)
               {
                 profileStep = 0;
                 changeDirection();
               }
               break;
             default:
-              Serial.println("Speed profile error");
+              //Serial.println("Speed profile error");
               break;
           }
           
@@ -366,6 +390,7 @@ void loop() {
     }
     case 12: { // Pause
         setMotorSpeed(0);
+        waterLevelVerificationCounter = 0;
         closeWater(); //without valve, this function does not do anything
         //turnOffPump(); we may want to rework this function
         digitalWrite(PUMP_OUT_ENABLE, LOW); //used for now in place of turnOffPump()

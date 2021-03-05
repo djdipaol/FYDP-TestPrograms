@@ -38,21 +38,29 @@ void rotation() {
 */
 double calcSpeed()
 {
-  if(micros()-prevTime >= 5100)
+  if(micros()-prevTime >= 510000)
   {
     currTime=micros();
-    speeds[speedArrayCount]= ((double)magnetCount/2.0)/((currTime-prevTime)/1000000.0)*60.0;
+    //Serial.println(currTime);
+    
+    speeds[speedArrayCount]= ((double)magnetCount/4.0)/((currTime-prevTime)/1000000.0)*60.0;
+    //Serial.println(speeds[speedArrayCount]);
     //double currSpeed = (double)magnetCount/((currTime-prevTime)/1000000.0)*60.0;
+    //Serial.println(prevTime);
     prevTime=currTime;
+    //Serial.println(magnetCount);
     magnetCount = 0;
     speedArrayCount = (speedArrayCount+1)%5;
+
+    //Serial.println((speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5);
+    
     return (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
     //return currSpeed;
   }
-  else
+  /*else
   {
     return -1;
-  }
+  }*/
 }
 
 /**
@@ -128,7 +136,14 @@ bool checkLid() {
    @returns
 */
 void checkForPause() {
-  if (digitalRead(JOYSTICK_PRESS) == LOW || checkLid()) {
+  int tempPauseCounter = 0;
+  for(int k = 0; k <= 10; k++) {
+    if (digitalRead(JOYSTICK_PRESS) == LOW){// || checkLid()) {
+      tempPauseCounter++;
+    }
+      delay(5);
+  }
+  if (tempPauseCounter > 5) {
     Serial.print("Pausing cycle for ");
     if(checkLid())
     {
@@ -168,6 +183,7 @@ void checkForPause(int state) {
 void startNextCycle() {
   Serial.println("End of state " + (String)programState);
   programState = programState + 1;
+  waterLevelVerificationCounter = 0;
   caseStartTime=millis(); //added as a way to record when each state starts
 }
 
@@ -179,7 +195,7 @@ void startNextCycle() {
 void openValve() {
   digitalWrite(VALVE_IN_ENABLE, HIGH); //open the valve for water inlet
   //we need to test the Relay ON or OFF for opening the valve, in some cases, the relay works reversly: LOW is on, HIGH is Off.
-  Serial.println("opening  Valve");
+  //Serial.println("opening  Valve");
 }
 
 /**
@@ -200,9 +216,9 @@ void closeWater() {
   duration = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
   distance = (duration / 2) * 0.0344;
   if (distance >= 400 || distance <= 2) {
-    Serial.print("Distance = ");
-    Serial.println("Out of range");
-    //failureCode=7;
+    //Serial.print("Distance = ");
+    //Serial.println("Out of range");
+    failureCode=7;
   }
   else {
     //Preliminary failure code 
@@ -278,9 +294,9 @@ void turnOffPump() {
   duration = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
   distance = (duration / 2) * 0.0344;
   if (distance >= 400 || distance <= 2) {
-    Serial.print("Distance = ");
-    Serial.println("Out of range");
-    failureCode=7;
+    //Serial.print("Distance = ");
+    //Serial.println("Out of range");
+    //failureCode=7;
   }
   
   else if (distance == 25) {
@@ -391,11 +407,11 @@ float measureWaterLevel()
   digitalWrite(ULTRASONIC_TRIGGER_PIN, LOW);
   float dur = pulseIn(ULTRASONIC_ECHO_PIN, HIGH);
   float dist = (dur / 2) * 0.0344;
-  Serial.println(dist);
+  //Serial.println(dist);
   if (dist >= 400 || dist <= 2) {
-    Serial.print("Distance = ");
-    Serial.println("Out of range");
-    failureCode=7;
+    //Serial.print("Distance = ");
+    //Serial.println("Out of range");
+    //failureCode=7;
     dist = -1;
   }
   return dist;

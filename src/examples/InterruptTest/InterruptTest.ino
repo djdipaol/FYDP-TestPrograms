@@ -17,7 +17,7 @@ volatile int count = 0;
 const byte tacho_pin = 2;//50;
 
 //PWM pin
-const int PWM = 6;
+const int PWM = 5;
 const int DIR = 4;
 
 //Speed setting
@@ -26,6 +26,7 @@ int rpm = 60;
 //time variables
 unsigned long prevTime = 0;
 unsigned long currTime = 0;
+unsigned long switchTime = 0;
 
 void setup() {
   // put your setup code here, to run once:
@@ -40,6 +41,7 @@ void setup() {
   pinMode(DIR, OUTPUT);
   digitalWrite(DIR,LOW);
   prevTime=micros();
+  switchTime=millis();
 }
 
 void loop() {
@@ -56,9 +58,26 @@ void loop() {
 
   avgSpeed = (speeds[0]+speeds[1]+speeds[2]+speeds[3]+speeds[4])/5;
   
-  Serial.println("Average Speed: "+ (String)avgSpeed);
+  //Serial.println("Speeds:"+ (String)speeds[0] + " | " + (String)speeds[1] + " | " + (String)speeds[2] + " | " + (String)speeds[3] + " | "+(String)speeds[4] + "    Average Speed: "+ (String)avgSpeed);
+  Serial.println(    "Average Speed: "+ (String)avgSpeed);
 
-  delay(1000); //the delay seems to help with accuracy, may just want a short time ~200
+  if(millis() - switchTime > 15000)
+  {
+    switchTime = millis();
+    analogWrite(PWM,0);
+    if(digitalRead(DIR) ==HIGH)
+    {
+      digitalWrite(DIR,LOW);
+    }
+    else
+    {
+      digitalWrite(DIR,HIGH);
+    }
+    delay(1000);
+    analogWrite(PWM,rpm);
+  }
+  delay(800); //the delay seems to help with accuracy, may just want a short time ~200
+  
 }
 
 void rotation() {
