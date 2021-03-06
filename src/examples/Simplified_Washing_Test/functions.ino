@@ -218,7 +218,7 @@ void closeWater() {
   if (distance >= 400 || distance <= 2) {
     //Serial.print("Distance = ");
     //Serial.println("Out of range");
-    failureCode=7;
+    //failureCode=7;
   }
   else {
     //Preliminary failure code 
@@ -275,7 +275,7 @@ bool checkValve() {
    @returns
 */
 void turnOnPump() {
-  Serial.println("ON");
+  //Serial.println("ON");
   digitalWrite(PUMP_OUT_ENABLE, HIGH); //turn on the pump for water drain
   //we need to test the Relay ON or OFF for opening the valve, in some cases, the relay works reversly: LOW is on, HIGH is Off.
 }

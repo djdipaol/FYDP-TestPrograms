@@ -35,6 +35,7 @@ void setup() {
   pinMode(TACHOMETER,INPUT);
   attachInterrupt(digitalPinToInterrupt(TACHOMETER), rotation, CHANGE);
 //>>>>>>> d635b3dfdfa117ae4be70327f1aa0fe7ac125ccc
+  programTime - millis();
 }
 
 void loop() {
@@ -48,6 +49,8 @@ void loop() {
         isRinsed = false;
         maxSpeed = 60;
         startNextCycle();
+        cycleTime = 30000;
+        //programState=6;
         break;
       }
     case 1: { // User Selection
@@ -94,10 +97,11 @@ void loop() {
     case 2: { //Update LCD screen to inform user about water level
         printString2(0, 0, "Please add water");
         startNextCycle();
+        delay(2000);
         break;
       }
     case 3: { //Measure water level for user
-        if(failureCode != 0) //this transition should only occur if the Ultrasonic range is out of bounds
+        /*if(failureCode != 0) //this transition should only occur if the Ultrasonic range is out of bounds
         {
           lastSavedState = programState;
           programState = 13;
@@ -127,15 +131,23 @@ void loop() {
           printString2(0,0, "Press to start");
           while(digitalRead(JOYSTICK_PRESS) == HIGH){} //When joystick is pressed = LOW
           startNextCycle();
-        }
+        }*/
         //startNextCycle();//REMOVE
+
+        distance = measureWaterLevel();
+        printString(0, 2, (String)(distance-levelValue));
+        if(digitalRead(JOYSTICK_PRESS) == LOW)
+        {
+          startNextCycle();
+        }
+        delay(500);
         break;
       }
     case 4: { // Clear screen and set time
         lcd.clear();
         delay(50);
         startNextCycle();
-        endTimerTime=caseStartTime+300000;
+        endTimerTime=caseStartTime+cycleTime;
         break;
       }
     case 5: { // Run the motor for the washing cycle and display time
@@ -195,7 +207,7 @@ void loop() {
               profileStep=3;
               break;
             case 3:
-              if(millis()-plateauTime > 2000)
+              if(millis()-plateauTime > 10000)
               {
                 profileStep = 0;
                 changeDirection();
@@ -218,7 +230,7 @@ void loop() {
             stoppedCount = 0;
           }
           
-          if(millis()-caseStartTime > 30000) //Stop motor after time ends
+          if(millis()-caseStartTime > cycleTime) //Stop motor after time ends
           {
             setMotorSpeed(0);
             startNextCycle();
@@ -230,17 +242,17 @@ void loop() {
         break;
       }
     case 6: {//Turn on pump
-      checkForPause();
+      /*checkForPause();
       calcSpeed();
       if(failureCode != 0) //check for failure codes
       {
         lastSavedState = programState;
         programState = 13;
       }
-      /*else if(speeds[4]>0) //check that the motor stops, using most recent speed
+      else if(speeds[4]>0) //check that the motor stops, using most recent speed
       {
         failureCode = 4;
-      }*/
+      }
       else //run case as expected
       {
         if(checkPump())
@@ -267,11 +279,20 @@ void loop() {
           //sprintf(levelString, "%f + cm",distance);
           //printString2(0, 0, levelString);
           printString(0, 2, (String)(distance));
-          /*if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
+          if((millis() - caseStartTime > 15000)&&(abs(initialDist-distance)<1))
           {
             failureCode = 6; //uncomment this
-          }*/
+          }
         }
+      }*/
+      digitalWrite(PUMP_OUT_ENABLE, HIGH);
+      delay(5000);
+      distance = measureWaterLevel();
+      printString(0, 2, (String)(distance-levelValue));
+      if(digitalRead(JOYSTICK_PRESS) == LOW)
+      {
+        digitalWrite(PUMP_OUT_ENABLE, LOW);
+        startNextCycle();
       }
       break;
     }
@@ -285,14 +306,16 @@ void loop() {
       {
         programState = 2;
         isRinsed = true;
+        cycleTime = 30000;
       }
       else
       {
-        maxSpeed=200;
+        //maxSpeed=200;
+        speedTarget = 200;
         lcd.clear();
         delay(500);
         startNextCycle();
-        endTimerTime=caseStartTime+300000;
+        endTimerTime=caseStartTime+cycleTime;
       }
       
       break;
@@ -303,26 +326,26 @@ void loop() {
           lastSavedState = programState;
           programState = 13;
         }
-        else if(stoppedCount > 5)//Failure code 3 notes: if the motor speed does not change, set error code
+        else if(stoppedCount > 15)//Failure code 3 notes: if the motor speed does not change, set error code
         {
           failureCode = 3;
           stoppedCount = 0;
         }
+        else if(abs(speedActual-speedTarget) > speedTol && millis() - speedTimer > 10000)//Failure code 5: the motor speed does not settle
+        {
+          overshootCount++;
+          speedTimer = millis();
+          if(overshootCount > overshootLimit)
+          {
+            failureCode = 5;
+            overshootCount =0;
+          }
+        }
         else
         {
-          if(abs(speedActual-speedTarget) > speedTol)//Failure code 5: the motor speed does not settle
-          {
-            overshootCount++;
-            if(overshootCount > 5)
-            {
-              failureCode = 5;
-              overshootCount =0;
-            }
-          }
-          
           checkForPause();
 
-          switch(profileStep)
+          /*switch(profileStep)
           {
             case 0:
               speedTarget += speedIncrement;
@@ -358,7 +381,7 @@ void loop() {
             default:
               //Serial.println("Speed profile error");
               break;
-          }
+          }*/
           
           runMotorLoop();
           displayTime(endTimerTime);
@@ -371,7 +394,7 @@ void loop() {
             stoppedCount = 0;
           }
           
-          if(millis()-caseStartTime > 300000) //Stop motor after time ends
+          if(millis()-caseStartTime > cycleTime) //Stop motor after time ends
           {
             setMotorSpeed(0);
             startNextCycle();
@@ -386,6 +409,9 @@ void loop() {
       printString2(0,0,"Completed");
       while(!checkLid()){}
       programState = 0;
+      printString(0, 2, (String)(millis()-programTime));
+      //Serial.print("Total Time for cycle: ");
+      //Serial.println(millis()-programTime);
       break;
     }
     case 12: { // Pause

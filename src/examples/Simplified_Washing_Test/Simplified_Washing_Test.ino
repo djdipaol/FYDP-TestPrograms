@@ -29,7 +29,7 @@ const int directionControl = 4;
 //Speed Profile variables
 int profileStep = 0;
 unsigned long plateauTime = 0;
-double speedIncrement = 0.1;
+double speedIncrement = 2;
 double maxSpeed = 60;
 
 // Joystick
@@ -57,7 +57,7 @@ unsigned long prevTime = 0; //time variable for speed calc
 unsigned long currTime = 0; //time variable for speed calc
 
 // Solenoid Valve and Pump Relays
-const int VALVE_IN_ENABLE = 2;
+const int VALVE_IN_ENABLE = 2; //change this
 const int PUMP_OUT_ENABLE = 13;
 int valveStatus;
 int pumpStatus;
@@ -68,11 +68,11 @@ const int ULTRASONIC_ECHO_PIN = 10;
 float duration;
 float distance;
 float initialDist = -1; //used to check if the water level changes
-float emptyLevel = 35; //this is the distance of the drum when there is not water
+float emptyLevel = 39; //this is the distance of the drum when there is not water
 float minMeasurement = 10; //the measure level should not fall below this value, if it does there is an issue
 bool isRinsed = false;
 char levelString[8];
-float levelValue = 27;
+float levelValue = 29;
 unsigned long drainTimer = 0;
 float displayDist = -1;
 
@@ -92,6 +92,8 @@ unsigned long remainingTimerTime = 0;
 unsigned long stoppedTimer = 0;
 unsigned long speedTimer = 0;
 int waterLevelVerificationCounter = 0;
+unsigned long cycleTime = 1200000;
+unsigned long programTime = 0;
 
 //FailureCode
 int failureCode = 0; //int used for identifying different failure states
